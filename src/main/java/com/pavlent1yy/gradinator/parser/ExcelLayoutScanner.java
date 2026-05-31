@@ -13,28 +13,34 @@ import java.util.*;
 @Component
 public class ExcelLayoutScanner {
 
+    private static final int COL_NUMBER  = 0;
+    private static final int COL_SUBJECT = 1;
+    private static final int COL_TEACHER = 5;
+    private static final int COL_ROOM    = 8;
+
     private static final Set<String> DAYS = Set.of(
             "Понедельник", "Вторник", "Среда",
             "Четверг", "Пятница", "Суббота"
     );
 
     public List<GroupSchedule> scan(Sheet sheet) {
-
         List<GroupSchedule> result = new ArrayList<>();
 
         GroupSchedule group = null;
-        DaySchedule day = null;
+        DaySchedule   day   = null;
 
         int i = 0;
+        int lastRow = sheet.getLastRowNum();
 
-        while (i <= sheet.getLastRowNum()) {
-
+        while (i <= lastRow) {
             Row row = sheet.getRow(i);
             i++;
 
             if (row == null) continue;
 
-            String c0 = cell(row, 0);
+            String c0 = cell(row, COL_NUMBER);
+
+            if (c0.startsWith("*")) continue;
 
             if (isGroup(c0)) {
                 group = new GroupSchedule(extractGroup(c0));
@@ -45,7 +51,6 @@ public class ExcelLayoutScanner {
 
             if (isDay(c0)) {
                 if (group == null) continue;
-
                 day = new DaySchedule(c0.trim());
                 group.addDay(day);
                 continue;
@@ -54,10 +59,10 @@ public class ExcelLayoutScanner {
             if (day == null || group == null) continue;
 
             if (isPairStart(c0)) {
-                PairSlot slot = readPair(sheet, i - 1);
+                int pairIndex = i - 1;
+                PairSlot slot = readPair(sheet, pairIndex);
                 day.addPair(slot);
 
-                // съедаем следующую строку
                 if (hasContinuation(sheet, i)) {
                     i++;
                 }
@@ -68,16 +73,15 @@ public class ExcelLayoutScanner {
     }
 
     private PairSlot readPair(Sheet sheet, int index) {
-
         Row main = sheet.getRow(index);
         Row next = sheet.getRow(index + 1);
 
-        int number = parseIntSafe(cell(main, 0));
+        int number = parseIntSafe(cell(main, COL_NUMBER));
 
+        // Числитель — может быть пустым (пара не назначена)
         CellData numerator = readCellData(main);
 
         CellData denominator = null;
-
         if (next != null && isContinuation(next)) {
             denominator = readCellData(next);
         }
@@ -85,29 +89,36 @@ public class ExcelLayoutScanner {
         return new PairSlot(number, numerator, denominator);
     }
 
-    private boolean hasContinuation(Sheet sheet, int i) {
-        Row next = sheet.getRow(i);
+    private boolean hasContinuation(Sheet sheet, int nextIndex) {
+        Row next = sheet.getRow(nextIndex);
         return next != null && isContinuation(next);
     }
 
+
     private boolean isContinuation(Row row) {
-        String c0 = cell(row, 0);
-        return (c0.isBlank() || "0.0".equals(c0)) &&
-                (!cell(row, 1).isBlank()
-                        || !cell(row, 2).isBlank()
-                        || !cell(row, 3).isBlank());
+        String c0 = cell(row, COL_NUMBER);
+        boolean noNumber = c0.isBlank() || "0.0".equals(c0);
+        boolean hasData  = !cell(row, COL_SUBJECT).isBlank()
+                || !cell(row, COL_TEACHER).isBlank()
+                || !cell(row, COL_ROOM).isBlank();
+        return noNumber && hasData;
     }
 
     private CellData readCellData(Row row) {
         return new CellData(
-                cell(row, 1),
-                cell(row, 2),
-                cell(row, 3)
+                normalizeMultiline(cell(row, COL_SUBJECT)),
+                normalizeMultiline(cell(row, COL_TEACHER)),
+                normalizeMultiline(cell(row, COL_ROOM))
         );
     }
 
+    private String normalizeMultiline(String value) {
+        if (value == null) return "";
+        return value.replace("\n", " / ").trim();
+    }
+
     private boolean isGroup(String v) {
-        return v != null && v.matches(".*[А-Я]{2}\\d-\\d{2}.*");
+        return v != null && v.matches(".*[А-ЯA-Z]{2}\\d-\\d{2}.*");
     }
 
     private boolean isDay(String v) {
@@ -131,8 +142,10 @@ public class ExcelLayoutScanner {
         }
     }
 
-    private String cell(Row row, int i) {
-        if (row == null || row.getCell(i) == null) return "";
-        return row.getCell(i).toString().trim();
+    private String cell(Row row, int col) {
+        if (row == null) return "";
+        var c = row.getCell(col);
+        if (c == null) return "";
+        return c.toString().trim();
     }
 }
