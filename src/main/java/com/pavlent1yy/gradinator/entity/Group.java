@@ -20,5 +20,4 @@ public class Group {
     @Column(nullable = false, unique = true)
     private String name;
 
-
 }
