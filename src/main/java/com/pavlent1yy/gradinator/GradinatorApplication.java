@@ -1,6 +1,5 @@
 package com.pavlent1yy.gradinator;
 
-import com.pavlent1yy.gradinator.service.ScheduleWebParserService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
