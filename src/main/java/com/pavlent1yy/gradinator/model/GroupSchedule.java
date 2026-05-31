@@ -18,6 +18,11 @@ public class GroupSchedule {
     }
 
     public void addDay(DaySchedule day) {
-        this.days.add(day);
+        boolean exists = days.stream()
+                .anyMatch(d -> d.getDay().equals(day.getDay()));
+        if (!exists) {
+            days.add(day);
+        }
     }
+
 }

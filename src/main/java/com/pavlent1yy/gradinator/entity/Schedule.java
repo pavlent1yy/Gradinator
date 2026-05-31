@@ -31,9 +31,7 @@ public class Schedule {
     @ManyToOne
     @JoinColumn(name = "weekday_id")
     private WeekDay weekDay;
-    @ManyToOne
-    @JoinColumn(name = "weektype_id")
-    private WeekType weekType;
+
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Group studentGroup;

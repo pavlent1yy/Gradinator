@@ -12,21 +12,20 @@ import java.util.List;
 
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
-    @Query("""
-        SELECT s.pairNumber AS pairNumber,
-               s.subject AS subject,
-               s.teacher AS teacher,
-               s.room AS room
-        FROM Schedule s
-        WHERE s.studentGroup.id = :groupId
-          AND s.weekDay.id = :weekdayId
-          AND s.weekType.id IN :weektypeIds
-    """)
-    List<ScheduleProjection> findScheduleByGroupIdAndWeekdayIdAndWeekTypeIds(
-            @Param("groupId") Long groupId,
-            @Param("weekdayId") Long weekdayId,
-            @Param("weektypeIds") List<Long> weektypeIds
-    );
+//    @Query("""
+//        SELECT s.pairNumber AS pairNumber,
+//               s.subject AS subject,
+//               s.teacher AS teacher,
+//               s.room AS room
+//        FROM Schedule s
+//        WHERE s.studentGroup.id = :groupId
+//          AND s.weekDay.id = :weekdayId
+//    """)
+//    List<ScheduleProjection> findScheduleByGroupIdAndWeekdayIdAndWeekTypeIds(
+//            @Param("groupId") Long groupId,
+//            @Param("weekdayId") Long weekdayId,
+//            @Param("weektypeIds") List<Long> weektypeIds
+//    );
 
 //    @Query("""
 //    SELECT wd.name AS weekday,

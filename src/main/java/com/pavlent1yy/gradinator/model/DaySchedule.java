@@ -17,6 +17,19 @@ public class DaySchedule {
     }
 
     public void addPair(PairSlot pair) {
-        this.pairs.add(pair);
+        for (PairSlot existing : pairs) {
+            if (existing.getPairNumber() == pair.getPairNumber()) {
+                if (existing.getNumerator().isEmpty() && !pair.getNumerator().isEmpty()) {
+                    existing.setNumerator(pair.getNumerator());
+                }
+                if (existing.getDenominator() == null && pair.getDenominator() != null) {
+                    existing.setDenominator(pair.getDenominator());
+                }
+                return;
+            }
+        }
+        pairs.add(pair);
     }
+
+
 }
