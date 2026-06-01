@@ -1,12 +1,9 @@
 package com.pavlent1yy.gradinator.model;
 
-import java.time.DayOfWeek;
 import java.util.List;
-import java.util.Map;
 
 import lombok.Data;
 import java.util.ArrayList;
-import java.util.List;
 
 @Data
 public class GroupSchedule {

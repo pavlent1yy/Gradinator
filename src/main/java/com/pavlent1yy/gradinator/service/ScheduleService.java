@@ -1,10 +1,13 @@
 package com.pavlent1yy.gradinator.service;
 
 import com.pavlent1yy.gradinator.enums.WeekType;
+import com.pavlent1yy.gradinator.model.CellData;
 import com.pavlent1yy.gradinator.model.DaySchedule;
 import com.pavlent1yy.gradinator.model.GroupSchedule;
+import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.parser.ExcelLayoutScanner;
 import lombok.AllArgsConstructor;
+import org.antlr.v4.runtime.misc.Pair;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -15,12 +18,17 @@ import java.time.LocalDate;
 import java.time.temporal.IsoFields;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import static com.pavlent1yy.gradinator.enums.WeekType.NUMERATOR;
+import static com.pavlent1yy.gradinator.enums.WeekType.DENOMINATOR;
 
 @Service
 @AllArgsConstructor
 public class ScheduleService {
 
     private final ExcelLayoutScanner scanner;
+//    private final ScheduleWebParserService parserService;
 
     public List<GroupSchedule> getAllGroups(String fileName) {
         try (FileInputStream fis = new FileInputStream(
@@ -44,14 +52,11 @@ public class ScheduleService {
     public DaySchedule getToday(String fileName, String group){
         int today = LocalDate.now().getDayOfWeek().getValue() - 1;
         if (today == 6) today = 0;
-        return getWeek(fileName, group).getDays().get(today);
+        List<PairSlot> pairs = getWeek(fileName, group).getDays().get(today).getPairs();
+        DaySchedule todaySchedule = getWeek(fileName, group).getDays().get(today);
+        todaySchedule.setPairs(pairs);
+        return todaySchedule;
     }
-
-    public WeekType getWeekType(){
-        int weekNumber = LocalDate.now().get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
-        return weekNumber % 2 == 0
-                ? WeekType.NUMERATOR
-                : WeekType.DENOMINATOR;
-    }
+    
 
 }
