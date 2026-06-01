@@ -3,7 +3,6 @@ package com.pavlent1yy.gradinator.service;
 import com.pavlent1yy.gradinator.enums.WeekType;
 import com.pavlent1yy.gradinator.model.CellData;
 import com.pavlent1yy.gradinator.model.PairSlot;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.AllArgsConstructor;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -77,7 +76,11 @@ public class ScheduleWebParserService {
     private static @NonNull PairSlot buildPairSlot(Integer changedPairNumber, String subject, String room, WeekType weekType) {
         PairSlot pairSlot = new PairSlot();
         pairSlot.setPairNumber(changedPairNumber);
-        CellData cell = new CellData("(❗замена) " + subject, room);
+        if (subject.equals("Снято"))
+            subject = "❕ Снято";
+        else
+            subject = "❗ " + subject;
+        CellData cell = new CellData(subject, room, "в предмете");
 
         if (weekType == NUMERATOR)
             pairSlot.setNumerator(cell);
@@ -86,6 +89,8 @@ public class ScheduleWebParserService {
 
         return pairSlot;
     }
+
+
 
 
 }

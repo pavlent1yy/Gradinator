@@ -16,13 +16,20 @@ public class CellData {
     private List<String> teachers;
     private List<String> rooms;
 
-    public CellData (String subject, String room){
+    public CellData (String subject, String room, String teacher){
         subjects = new ArrayList<>(List.of(subject));
         rooms = new ArrayList<>(List.of(room));
+        teachers = new ArrayList<>(List.of(teacher));
     }
 
     @JsonProperty("empty")
     public boolean isEmpty() {
         return subjects.isEmpty() && teachers.isEmpty() && rooms.isEmpty();
     }
+
+
+//    @Override
+//    public String toString() {
+//        return String.format("%s | %s | [%s]", subjects.toString(), teachers.toString(), rooms.toString()) ;
+//    }
 }

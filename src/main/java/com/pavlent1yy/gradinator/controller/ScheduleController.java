@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @AllArgsConstructor
-public class TestController {
+public class ScheduleController {
 
     private final ScheduleService scheduleService;
     private final ScheduleWebParserService parserService;
@@ -26,19 +26,25 @@ public class TestController {
     }
 
 
-    @PostMapping("/schedule/{fileName}/{group}")
+    @PostMapping("/all-schedule/{fileName}/{group}")
     public GroupSchedule getSchedule(@PathVariable String fileName,
                                      @PathVariable String group)  {
        return scheduleService.getWeek(fileName, group);
     }
 
     @PostMapping("/today-schedule/{fileName}/{group}")
-    public DaySchedule getDaySchedule (@PathVariable String fileName,
-                                       @PathVariable String group){
+    public DaySchedule getTodaySchedule(@PathVariable String fileName,
+                                        @PathVariable String group){
         return scheduleService.getToday(fileName, group);
     }
 
-    @PostMapping("/getChanges/{group}")
+    @PostMapping("/tomorrow-schedule/{fileName}/{group}")
+    public DaySchedule getTomorrowSchedule(@PathVariable String fileName,
+                                           @PathVariable String group){
+        return scheduleService.getTomorrowWithChanges(fileName, group);
+    }
+
+    @GetMapping("/getChanges/{group}")
     public List<PairSlot> getChanges(@PathVariable String group){
         return parserService.getChanges(group);
     }

@@ -32,4 +32,27 @@ public class DaySchedule {
     }
 
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== ").append(day).append(" ===\n");
+
+        for (PairSlot pair : pairs) {
+            sb.append("  [")
+                    .append(pair.getPairNumber())
+                    .append("] ");
+
+            if (pair.getNumerator() != null) {
+                sb.append("Ч: ").append(pair.getNumerator());
+            }
+
+            if (pair.getDenominator() != null) {
+                sb.append(" | З: ").append(pair.getDenominator());
+            }
+
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
 }
