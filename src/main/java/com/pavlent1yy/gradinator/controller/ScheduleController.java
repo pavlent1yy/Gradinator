@@ -20,28 +20,19 @@ public class ScheduleController {
     private final ScheduleService scheduleService;
     private final ScheduleWebParserService parserService;
 
-    @PostMapping("/parse/{fileName}")
-    public List<GroupSchedule> parse(@PathVariable String fileName) {
-        return scheduleService.getAllGroups(fileName);
+    @PostMapping("/all-schedule/{group}")
+    public GroupSchedule getSchedule(@PathVariable String group)  {
+       return scheduleService.getWeek(group);
     }
 
-
-    @PostMapping("/all-schedule/{fileName}/{group}")
-    public GroupSchedule getSchedule(@PathVariable String fileName,
-                                     @PathVariable String group)  {
-       return scheduleService.getWeek(fileName, group);
+    @PostMapping("/today-schedule/{group}")
+    public DaySchedule getTodaySchedule(@PathVariable String group){
+        return scheduleService.getToday(group);
     }
 
-    @PostMapping("/today-schedule/{fileName}/{group}")
-    public DaySchedule getTodaySchedule(@PathVariable String fileName,
-                                        @PathVariable String group){
-        return scheduleService.getToday(fileName, group);
-    }
-
-    @PostMapping("/tomorrow-schedule/{fileName}/{group}")
-    public DaySchedule getTomorrowSchedule(@PathVariable String fileName,
-                                           @PathVariable String group){
-        return scheduleService.getTomorrowWithChanges(fileName, group);
+    @PostMapping("/tomorrow-schedule/{group}")
+    public DaySchedule getTomorrowSchedule(@PathVariable String group){
+        return scheduleService.getTomorrowWithChanges(group);
     }
 
     @GetMapping("/getChanges/{group}")

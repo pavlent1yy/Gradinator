@@ -11,11 +11,14 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 
 import java.util.*;
+
+import static com.pavlent1yy.gradinator.service.GroupFileMap.getPossibleFileByGroupPrefix;
 
 @Service
 @AllArgsConstructor
@@ -24,37 +27,50 @@ public class ScheduleService {
     private final ExcelLayoutScanner scanner;
     private final ScheduleWebParserService parserService;
 
-    public List<GroupSchedule> getAllGroups(String fileName) {
-        try (FileInputStream fis = new FileInputStream(
-                String.format("C:/Users/User/Documents/scheduleFiles/%s", fileName));
-             Workbook wb = new XSSFWorkbook(fis)) {
+    public List<GroupSchedule> getGroupSchedule(String group) {
+        String fileName = getPossibleFileByGroupPrefix(group);
+        try (
+                InputStream is = getClass()
+                        .getClassLoader()
+                        .getResourceAsStream("scheduleFiles/" + fileName)
+        ) {
 
-            List<GroupSchedule> result = new ArrayList<>();
-            for (int i = 0; i < wb.getNumberOfSheets(); i++) {
-                result.addAll(scanner.scan(wb.getSheetAt(i)));
+            if (is == null) {
+                throw new FileNotFoundException(fileName);
             }
-            return result;
+
+            try (Workbook wb = new XSSFWorkbook(is)) {
+
+                List<GroupSchedule> result = new ArrayList<>();
+
+                for (int i = 0; i < wb.getNumberOfSheets(); i++) {
+                    result.addAll(scanner.scan(wb.getSheetAt(i)));
+                }
+
+                return result;
+            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public GroupSchedule getWeek(String fileName, String group){
-        return getAllGroups(fileName).stream().filter(g -> g.getGroup().equals(group)).findFirst().orElseThrow();
+    public GroupSchedule getWeek(String group){
+        return getGroupSchedule(group).stream().filter(g -> g.getGroup().equals(group)).findFirst().orElseThrow();
     }
 
-    public DaySchedule getToday(String fileName, String group){
+    public DaySchedule getToday(String group){
         int today = getScheduleDayIndex();
-        DaySchedule todaySchedule = getWeek(fileName, group).getDays().get(today);
+        DaySchedule todaySchedule = getWeek(group).getDays().get(today);
         List<PairSlot> pairs = todaySchedule.getPairs();
         todaySchedule.setPairs(pairs);
         return todaySchedule;
     }
 
-    public DaySchedule getTomorrowWithChanges(String fileName, String group) {
+    public DaySchedule getTomorrowWithChanges(String group) {
         int tomorrow = getScheduleDayIndex() + 1;
 
-        DaySchedule tomorrowSchedule = getWeek(fileName, group)
+        DaySchedule tomorrowSchedule = getWeek(group)
                 .getDays()
                 .get(tomorrow);
 
@@ -88,7 +104,6 @@ public class ScheduleService {
                 .toList();
 
         tomorrowSchedule.setPairs(new ArrayList<>(result));
-        System.out.println(tomorrowSchedule);
         return tomorrowSchedule;
     }
 
