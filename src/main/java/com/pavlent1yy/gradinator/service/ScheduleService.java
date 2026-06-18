@@ -67,16 +67,16 @@ public class ScheduleService {
         return todaySchedule;
     }
 
-    public DaySchedule getTomorrowWithChanges(String group) {
-        int tomorrow = getScheduleDayIndex() + 1;
+    public DaySchedule getActualChanges(String group) {
+        int today = getScheduleDayIndex();
 
-        DaySchedule tomorrowSchedule = getWeek(group)
+        DaySchedule schedule = getWeek(group)
                 .getDays()
-                .get(tomorrow);
+                .get(today);
 
         Map<Integer, PairSlot> merged = new HashMap<>();
 
-        for (PairSlot pair : tomorrowSchedule.getPairs()) {
+        for (PairSlot pair : schedule.getPairs()) {
             merged.put(pair.getPairNumber(), pair);
         }
 
@@ -103,8 +103,8 @@ public class ScheduleService {
                 .sorted(Comparator.comparingInt(PairSlot::getPairNumber))
                 .toList();
 
-        tomorrowSchedule.setPairs(new ArrayList<>(result));
-        return tomorrowSchedule;
+        schedule.setPairs(new ArrayList<>(result));
+        return schedule;
     }
 
     private boolean isAccordingToSchedule(PairSlot pair) {

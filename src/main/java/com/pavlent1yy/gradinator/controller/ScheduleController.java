@@ -30,9 +30,9 @@ public class ScheduleController {
         return scheduleService.getToday(group);
     }
 
-    @PostMapping("/tomorrow-schedule/{group}")
-    public DaySchedule getTomorrowSchedule(@PathVariable String group){
-        return scheduleService.getTomorrowWithChanges(group);
+    @PostMapping("/actual-schedule/{group}")
+    public DaySchedule getActualSchedule(@PathVariable String group){
+        return scheduleService.getActualChanges(group);
     }
 
     @GetMapping("/getChanges/{group}")
