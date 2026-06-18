@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradInator - Расписание занятий</title>
+    <link rel="stylesheet" href="/css/steampunk-style.css">
+</head>
+<body>
+<div class="steampunk-container">
+    <!-- Брутальная шапка -->
+    <div class="header-section">
+        <div class="gear gear-1"></div>
+        <div class="gear gear-2"></div>
+        <h1 class="main-title">⚙️ РАСПИСАНИЕ ЗАНЯТИЙ ⚙️</h1>
+        <div class="gradintor-badge">⚡ GradInator (MVP) ⚡</div>
+        <div class="title-underline"></div>
+    </div>
+
+    <!-- Металлическая панель с управлением -->
+    <div class="metal-panel control-panel">
+        <div class="metal-border"></div>
+
+        <!-- Поиск по группе -->
+        <div class="control-section">
+            <h3 class="control-title">🔍 ПОИСК ГРУППЫ</h3>
+            <form method="post" action="/schedule" class="group-form">
+                <div class="input-group">
+                    <input
+                            type="text"
+                            name="group"
+                            class="group-input"
+                            placeholder="Введите номер группы..."
+                            required
+                    >
+                    <button type="submit" class="submit-btn">ПОИСК</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Быстрые кнопки -->
+        <div class="control-section">
+            <h3 class="control-title">⚡ БЫСТРЫЙ ДОСТУП</h3>
+            <div class="buttons-group">
+                <form method="post" action="/schedule-no-changes" class="quick-form">
+                    <input
+                            type="text"
+                            name="group"
+                            class="hidden-input"
+                            id="groupInput"
+                            required
+                    >
+                    <button type="submit" class="quick-btn today-btn" onclick="setGroupFromInput(event)">
+                        📅 СЕГОДНЯ (БЕЗ ИЗМЕНЕНИЙ)
+                    </button>
+                </form>
+                <form method="post" action="/tommorow-schedule-no-changes" class="quick-form">
+                    <input
+                            type="text"
+                            name="group"
+                            class="hidden-input"
+                            id="groupInput2"
+                            required
+                    >
+                    <button type="submit" class="quick-btn tomorrow-btn" onclick="setGroupFromInput(event)">
+                        📆 ЗАВТРА (БЕЗ ИЗМЕНЕНИЙ)
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Ссылки на расписание звонков -->
+        <div class="control-section">
+            <h3 class="control-title">📋 РАСПИСАНИЕ ЗВОНКОВ</h3>
+            <div class="links-group">
+                <a href="https://ygk.edu.yar.ru/pages/rasp/25-26/raspisanie_zvonkov_-_korpus_a__b__v__m.PDF"
+                   target="_blank" class="schedule-link">
+                    🏢 Корпуса А, Б, В, М
+                </a>
+                <a href="https://ygk.edu.yar.ru/pages/rasp/25-26/raspisanie_zvonkov_-_korpus_t.PDF"
+                   target="_blank" class="schedule-link">
+                    🏢 Корпус Т
+                </a>
+                <a href="https://ygk.edu.yar.ru/pages/rasp/25-26/raspisanie_zvonkov_-_korpus_f.PDF"
+                   target="_blank" class="schedule-link">
+                    🏢 Корпус Ф
+                </a>
+            </div>
+        </div>
+
+        <div class="metal-border"></div>
+    </div>
+
+    <!-- Информация о неделе -->
+    <div class="week-info" th:if="${weekType}">
+        <div class="metal-badge week-badge">
+            <div class="badge-corner corner-tl"></div>
+            <div class="badge-corner corner-tr"></div>
+            <div class="badge-corner corner-bl"></div>
+            <div class="badge-corner corner-br"></div>
+            <span class="week-label">📅 ТИП НЕДЕЛИ:</span>
+            <span class="week-value" th:text="${weekType}"></span>
+        </div>
+        <div class="metal-badge group-badge" th:if="${group}">
+            <div class="badge-corner corner-tl"></div>
+            <div class="badge-corner corner-tr"></div>
+            <div class="badge-corner corner-bl"></div>
+            <div class="badge-corner corner-br"></div>
+            <span class="group-label">👥 ГРУППА:</span>
+            <span class="group-value" th:text="${group}"></span>
+        </div>
+    </div>
+
+    <!-- Расписание -->
+    <div class="schedule-section" th:if="${schedule}">
+        <div class="day-header">
+            <div class="metal-pipe metal-pipe-left"></div>
+            <h2 class="day-title">📋 <span th:text="${schedule.day}"></span></h2>
+            <div class="metal-pipe metal-pipe-right"></div>
+        </div>
+
+        <!-- Таблица расписания с металлическим обрамлением -->
+        <div class="table-wrapper metal-frame">
+            <div class="frame-corner frame-tl"></div>
+            <div class="frame-corner frame-tr"></div>
+            <div class="frame-corner frame-bl"></div>
+            <div class="frame-corner frame-br"></div>
+
+            <table class="schedule-table">
+                <thead>
+                <tr>
+                    <th class="col-number">ПАРА</th>
+                    <th class="col-subject">ПРЕДМЕТ</th>
+                    <th class="col-room">АУДИТОРИЯ</th>
+                    <th class="col-teacher">ПРЕПОДАВАТЕЛЬ</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="pair : ${schedule.pairs}"
+                    th:classappend="${pair.numerator.empty} ? 'empty-row' : ''">
+                    <!-- Номер пары -->
+                    <td class="cell-number">
+                        <div class="pair-number-badge" th:text="${pair.pairNumber + 1}"></div>
+                    </td>
+
+                    <!-- Предмет -->
+                    <td class="cell-subject">
+                        <div th:if="${pair.numerator.empty}" class="empty-cell">
+                            <span class="empty-text">СВОБОДА</span>
+                        </div>
+                        <div th:if="!${pair.numerator.empty}" class="subject-content">
+                            <span class="subject-text" th:text="${pair.numerator.subjects[0]}"></span>
+                        </div>
+                    </td>
+
+                    <!-- Аудитория -->
+                    <td class="cell-room">
+                        <div th:if="!${pair.numerator.empty}" class="room-content">
+                            <span class="room-text" th:text="${pair.numerator.rooms[0]}"></span>
+                        </div>
+                    </td>
+
+                    <!-- Преподаватель -->
+                    <td class="cell-teacher">
+                        <div th:if="!${pair.numerator.empty} and ${pair.numerator.teachers[0] != 'в предмете'}" class="teacher-content">
+                            <span class="teacher-text" th:text="${pair.numerator.teachers[0]}"></span>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Легенда замен -->
+        <div class="legend-section">
+            <div class="legend-item">
+                <span class="legend-icon">❗</span>
+                <span class="legend-text">Замененные пары</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-icon">❕</span>
+                <span class="legend-text">Снятые пары</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Пустое состояние -->
+    <div class="empty-state" th:if="!${schedule}">
+        <div class="empty-icon">⚙️</div>
+        <h3>🔍 Введите номер группы для просмотра расписания</h3>
+    </div>
+
+    <!-- Нижние металлические декоративные элементы -->
+    <div class="footer-decoration">
+        <div class="metal-pipe-vertical pipe-1"></div>
+        <div class="rivets">
+            <div class="rivet"></div>
+            <div class="rivet"></div>
+            <div class="rivet"></div>
+            <div class="rivet"></div>
+            <div class="rivet"></div>
+        </div>
+        <div class="metal-pipe-vertical pipe-2"></div>
+    </div>
+</div>
+
+<script>
+    function setGroupFromInput(event) {
+        const groupInput = document.getElementById('schedule-group');
+        if (groupInput && groupInput.value.trim() === '') {
+            event.preventDefault();
+            alert('Пожалуйста, введите номер группы');
+            return false;
+        }
+
+        // Копируем значение группы в скрытые поля форм
+        const mainInput = document.querySelector('input[name="group"]');
+        if (mainInput && mainInput.value.trim() !== '') {
+            document.getElementById('groupInput').value = mainInput.value;
+            document.getElementById('groupInput2').value = mainInput.value;
+        }
+    }
+</script>
+</body>
+</html>

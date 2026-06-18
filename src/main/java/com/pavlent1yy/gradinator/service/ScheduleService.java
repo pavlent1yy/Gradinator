@@ -59,15 +59,19 @@ public class ScheduleService {
         return getGroupSchedule(group).stream().filter(g -> g.getGroup().equals(group)).findFirst().orElseThrow();
     }
 
-    public DaySchedule getToday(String group){
-        int today = getScheduleDayIndex();
-        DaySchedule todaySchedule = getWeek(group).getDays().get(today);
-        List<PairSlot> pairs = todaySchedule.getPairs();
-        todaySchedule.setPairs(pairs);
+    public DaySchedule getTodayWithNoChanges(String group){
+        DaySchedule todaySchedule = getWeek(group).getDays().get(getScheduleDayIndex());
+        todaySchedule.setPairs(todaySchedule.getPairs());
         return todaySchedule;
     }
 
-    public DaySchedule getActualChanges(String group) {
+    public DaySchedule getTomorrowWithNoChanges(String group){
+        DaySchedule todaySchedule = getWeek(group).getDays().get(getScheduleDayIndex() + 1);
+        todaySchedule.setPairs(todaySchedule.getPairs());
+        return todaySchedule;
+    }
+
+    public DaySchedule getCurrentScheduleWithChanges(String group) {
         int today = getScheduleDayIndex();
 
         DaySchedule schedule = getWeek(group)

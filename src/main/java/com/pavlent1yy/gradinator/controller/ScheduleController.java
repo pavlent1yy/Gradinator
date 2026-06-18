@@ -27,12 +27,12 @@ public class ScheduleController {
 
     @PostMapping("/today-schedule/{group}")
     public DaySchedule getTodaySchedule(@PathVariable String group){
-        return scheduleService.getToday(group);
+        return scheduleService.getTodayWithNoChanges(group);
     }
 
-    @PostMapping("/actual-schedule/{group}")
-    public DaySchedule getActualSchedule(@PathVariable String group){
-        return scheduleService.getActualChanges(group);
+    @PostMapping("/current-schedule/{group}")
+    public DaySchedule getCurrentSchedule(@PathVariable String group){
+        return scheduleService.getCurrentScheduleWithChanges(group);
     }
 
     @GetMapping("/getChanges/{group}")
