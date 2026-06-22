@@ -76,9 +76,9 @@ public class ScheduleWebParserService {
     private static @NonNull PairSlot buildPairSlot(Integer changedPairNumber, String subject, String room, WeekType weekType) {
         PairSlot pairSlot = new PairSlot();
         pairSlot.setPairNumber(changedPairNumber);
-        if (subject.equals("Снято"))
+        if (subject.trim().equalsIgnoreCase("снято")) {
             subject = "❕ Снято";
-        else
+        } else
             subject = "❗ " + subject;
         CellData cell = new CellData(subject, room, "в предмете");
 
