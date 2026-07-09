@@ -4,7 +4,6 @@ build/
 !.mvn/wrapper/maven-wrapper.jar
 
 
-# скрываем приватные файлы явно
 src/main/resources/private-info.properties
 
 
