@@ -1,6 +1,7 @@
 package com.pavlent1yy.gradinator.service;
 
 
+import com.pavlent1yy.gradinator.model.Changes;
 import com.pavlent1yy.gradinator.model.DaySchedule;
 import com.pavlent1yy.gradinator.model.GroupSchedule;
 import com.pavlent1yy.gradinator.model.PairSlot;
@@ -59,24 +60,22 @@ public class ScheduleService {
         return getGroupSchedule(group).stream().filter(g -> g.getGroup().equals(group)).findFirst().orElseThrow();
     }
 
-    public DaySchedule getTodayWithNoChanges(String group){
-        DaySchedule todaySchedule = getWeek(group).getDays().get(getScheduleDayIndex());
-        todaySchedule.setPairs(todaySchedule.getPairs());
-        return todaySchedule;
-    }
 
-    public DaySchedule getTomorrowWithNoChanges(String group){
-        DaySchedule todaySchedule = getWeek(group).getDays().get(getScheduleDayIndex() + 1);
-        todaySchedule.setPairs(todaySchedule.getPairs());
-        return todaySchedule;
-    }
+    public DaySchedule getCurrentSchedule(String group) {
+        LocalDate today = LocalDate.of(2026,6,29);
+        // today = LocalDate.now();
+        // временно предположим, что сегодня 29 июня 2026 года. Замен летом нет..
 
-    public DaySchedule getCurrentScheduleWithChanges(String group) {
-        int today = getScheduleDayIndex();
+        Changes changes = parserService.getChanges(group);
+        System.out.println(changes);
+        int weekDay = getScheduleDayIndex(today);
+        if (today.isBefore(changes.getDate())){
+            weekDay++;
+        }
 
         DaySchedule schedule = getWeek(group)
                 .getDays()
-                .get(today);
+                .get(weekDay);
 
         Map<Integer, PairSlot> merged = new HashMap<>();
 
@@ -84,7 +83,7 @@ public class ScheduleService {
             merged.put(pair.getPairNumber(), pair);
         }
 
-        for (PairSlot change : parserService.getChanges(group)) {
+        for (PairSlot change : changes.getChangedPairs()) {
 
             PairSlot original = merged.get(change.getPairNumber());
 
@@ -118,8 +117,8 @@ public class ScheduleService {
                 .anyMatch(s -> s.toLowerCase().contains("по расписанию"));
     }
 
-    private int getScheduleDayIndex(){
-        int today = LocalDate.now().getDayOfWeek().getValue() - 1;
+    private int getScheduleDayIndex(LocalDate date){
+        int today = date.getDayOfWeek().getValue() - 1;
         if (today == 6) today = 0;
         return today;
     }

@@ -1,0 +1,4 @@
+CREATE TABLE flyway_test
+(
+    id BIGSERIAL PRIMARY KEY
+);
