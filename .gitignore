@@ -3,10 +3,10 @@ target/
 build/
 !.mvn/wrapper/maven-wrapper.jar
 
-# Spring Boot
-*.properties
-!src/main/resources/application*.properties  # оставляем конфиги приложения
-private-info.properties                      # скрываем приватные файлы явно
+
+# скрываем приватные файлы явно
+src/main/resources/private-info.properties
+
 
 # IDE
 # IntelliJ IDEA

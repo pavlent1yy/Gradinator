@@ -18,16 +18,14 @@ public class ScheduleFile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @Column(nullable = false, unique = true)
     private String filename;
 
-
     private Long size;
-
 
     private String hash;
 
+    private String etag;
 
     private LocalDateTime updatedAt;
 }

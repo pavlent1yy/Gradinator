@@ -127,7 +127,8 @@ public class ExcelLayoutScanner {
     private String extractGroup(Row row) {
         String raw = cellString(row, COL_NUMBER);
         Matcher m = GROUP_TOKEN.matcher(raw);
-        return m.find() ? m.group().trim() : raw.trim();
+        String group = m.find() ? m.group().trim() : raw.trim();
+        return group.replaceAll("\\s+", "");
     }
 
 

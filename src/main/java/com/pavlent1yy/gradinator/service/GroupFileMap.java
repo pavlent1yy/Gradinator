@@ -1,6 +1,8 @@
 package com.pavlent1yy.gradinator.service;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class GroupFileMap {
 
@@ -33,5 +35,9 @@ public class GroupFileMap {
 
     public static String getPossibleFileByGroupPrefix(String group) {
         return GROUP_TO_FILE.get(group.split("-")[0]);
+    }
+
+    public static Set<String> getAllFiles() {
+        return new HashSet<>(GROUP_TO_FILE.values());
     }
 }

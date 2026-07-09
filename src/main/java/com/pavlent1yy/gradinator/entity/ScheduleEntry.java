@@ -18,47 +18,40 @@ public class ScheduleEntry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "snapshot_id", nullable = false)
     private ScheduleSnapshot snapshot;
 
-
     @Column(nullable = false)
     private String groupName;
-
 
     @Column(nullable = false)
     private String day;
 
-
     @Column(nullable = false)
     private Integer pairNumber;
 
-
-    @ElementCollection
-    @CollectionTable(
-            name = "entry_subjects",
-            joinColumns = @JoinColumn(name = "entry_id")
-    )
+    @ElementCollection @CollectionTable(name = "entry_num_subjects", joinColumns = @JoinColumn(name = "entry_id"))
     @Column(name = "subject")
-    private List<String> subjects;
+    private List<String> numeratorSubjects;
 
-
-    @ElementCollection
-    @CollectionTable(
-            name = "entry_teachers",
-            joinColumns = @JoinColumn(name = "entry_id")
-    )
+    @ElementCollection @CollectionTable(name = "entry_num_teachers", joinColumns = @JoinColumn(name = "entry_id"))
     @Column(name = "teacher")
-    private List<String> teachers;
+    private List<String> numeratorTeachers;
 
-
-    @ElementCollection
-    @CollectionTable(
-            name = "entry_rooms",
-            joinColumns = @JoinColumn(name = "entry_id")
-    )
+    @ElementCollection @CollectionTable(name = "entry_num_rooms", joinColumns = @JoinColumn(name = "entry_id"))
     @Column(name = "room")
-    private List<String> rooms;
+    private List<String> numeratorRooms;
+
+    @ElementCollection @CollectionTable(name = "entry_den_subjects", joinColumns = @JoinColumn(name = "entry_id"))
+    @Column(name = "subject")
+    private List<String> denominatorSubjects;
+
+    @ElementCollection @CollectionTable(name = "entry_den_teachers", joinColumns = @JoinColumn(name = "entry_id"))
+    @Column(name = "teacher")
+    private List<String> denominatorTeachers;
+
+    @ElementCollection @CollectionTable(name = "entry_den_rooms", joinColumns = @JoinColumn(name = "entry_id"))
+    @Column(name = "room")
+    private List<String> denominatorRooms;
 }
