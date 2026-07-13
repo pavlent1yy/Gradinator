@@ -2,11 +2,13 @@ package com.pavlent1yy.gradinator;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
+@EnableAsync
 public class GradinatorApplication {
-
-
 	public static void main(String[] args) {
 		SpringApplication.run(GradinatorApplication.class, args);
 	}

@@ -1,52 +1,55 @@
 package com.pavlent1yy.gradinator.service;
 
 import com.pavlent1yy.gradinator.entity.HeartbeatLog;
-import com.pavlent1yy.gradinator.entity.ScheduleSnapshot;
-import com.pavlent1yy.gradinator.model.DaySchedule;
+
 import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.repository.GroupEntityRepository;
 import com.pavlent1yy.gradinator.repository.HeartbeatLogRepository;
-import com.pavlent1yy.gradinator.repository.ScheduleEntryRepository;
-import com.pavlent1yy.gradinator.repository.ScheduleSnapshotRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.time.*;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class HeartbeatService {
 
     private final ExcelFileSyncService excelFileSyncService;
     private final ScheduleWebParserService parserService;
     private final ScheduleService scheduleService;
-    private final SnapshotMapper snapshotMapper;
-    private final ScheduleSnapshotRepository snapshotRepository;
-    private final ScheduleEntryRepository entryRepository;
+    private final GroupEntityRepository groupRepository;
     private final HeartbeatLogRepository heartbeatLogRepository;
     private final SnapshotBuildService snapshotBuildService;
 
-    private enum Status { NO_CHANGES, CREATED, UPDATED }
+    @Value("${api.start-with-heartbeat}")
+    private boolean startWithHeartbeat;
 
-    @PostConstruct
-    public void init() {
-        run();
+    @EventListener(ApplicationReadyEvent.class)
+    public void startup() {
+        if (startWithHeartbeat) {
+            log.info("\nПервый heartbeat после запуска приложения api.start-with-heartbeat={}", startWithHeartbeat);
+            run();
+        }
     }
 
-    @Scheduled(fixedRate = 15 * 60 * 1000)
+    @Scheduled(
+            initialDelay = 15 * 60 * 1000,
+            fixedDelay = 15 * 60 * 1000
+    )
     public void run() {
         Instant start = Instant.now();
+        log.info("\n\nHeartbeat. Время: {} | следующий в {}", LocalTime.now(), LocalTime.now().plusMinutes(15));
         StringBuilder message = new StringBuilder();
 
         try {
@@ -56,7 +59,11 @@ public class HeartbeatService {
             LocalDate today = LocalDate.now();
             LocalDate changesDate = allChanges.date();
 
-            List<String> groups = scheduleService.getAllGroups();
+            List<String> groups = groupRepository.findAll().stream()
+                    .map(com.pavlent1yy.gradinator.entity.GroupEntity::getName)
+                    .toList();
+
+            scheduleService.checkGroupSync(new HashSet<>(scheduleService.getAllGroupsFromFiles()), new HashSet<>(groups));
 
             Map<String, List<PairSlot>> todaysChanges = changesDate != null && changesDate.equals(today)
                     ? allChanges.byGroup()
@@ -91,7 +98,7 @@ public class HeartbeatService {
                 .build();
         heartbeatLog = heartbeatLogRepository.save(heartbeatLog);
 
-        log.info("Heartbeat #{}\n{}", heartbeatLog.getId(), heartbeatLog.getMessage());
+        log.info("\n\n----------Heartbeat #{}----------\n{}\n", heartbeatLog.getId(), heartbeatLog.getMessage());
     }
 
     private String formatDuration(Instant start) {

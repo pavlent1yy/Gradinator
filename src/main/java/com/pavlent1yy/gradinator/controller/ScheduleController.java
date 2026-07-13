@@ -20,7 +20,7 @@ public class ScheduleController {
     private final ScheduleSnapshotRepository snapshotRepository;
     private final ScheduleEntryRepository entryRepository;
 
-    @GetMapping("/schedule/{group}")
+    @GetMapping("api/schedule/{group}")
     public ResponseEntity<DaySchedule> getSchedule(
             @PathVariable String group,
             @RequestParam(defaultValue = "today") String date

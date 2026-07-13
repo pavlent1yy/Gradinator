@@ -1,13 +1,17 @@
 package com.pavlent1yy.gradinator.service;
 
+import com.pavlent1yy.gradinator.entity.GroupEntity;
 import com.pavlent1yy.gradinator.model.DaySchedule;
 import com.pavlent1yy.gradinator.model.GroupSchedule;
 import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.parser.ExcelLayoutScanner;
+import com.pavlent1yy.gradinator.repository.GroupEntityRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
@@ -15,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.pavlent1yy.gradinator.service.GroupFileMap.getPossibleFileByGroupPrefix;
 
@@ -24,6 +29,7 @@ import static com.pavlent1yy.gradinator.service.GroupFileMap.getPossibleFileByGr
 public class ScheduleService {
 
     private final ExcelLayoutScanner scanner;
+    private final GroupEntityRepository groupRepository;
 
     public List<GroupSchedule> getGroupSchedule(String group) {
         String fileName = getPossibleFileByGroupPrefix(group);
@@ -82,28 +88,78 @@ public class ScheduleService {
         return copy;
     }
 
-    public List<String> getAllGroups() {
+    public List<String> getAllGroupsFromFiles() {
+        log.info("Начинаем поиск всех групп в файлах расписания");
+
         Set<String> groups = new HashSet<>();
+
         for (String fileName : GroupFileMap.getAllFiles()) {
-            try (InputStream is = getClass().getClassLoader().getResourceAsStream("scheduleFiles/" + fileName)) {
-                if (is == null) continue;
-                try (Workbook wb = new XSSFWorkbook(is)) {
-                    for (int i = 0; i < wb.getNumberOfSheets(); i++) {
-                        for (GroupSchedule gs : scanner.scan(wb.getSheetAt(i))) {
-                            String group = gs.getGroup();
-                            if (GroupFileMap.getPossibleFileByGroupPrefix(group) == null) {
-                                log.warn("Группа '{}' найдена в {}, но не сматчилась ни с одним префиксом в GroupFileMap — пропускаю", group, fileName);
-                                continue;
-                            }
-                            groups.add(group);
-                        }
-                    }
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            collectGroupsFromFile(fileName, groups);
         }
+
+        log.info("Найдено {} уникальных групп", groups.size());
+
         return new ArrayList<>(groups);
+    }
+
+    private void collectGroupsFromFile(String fileName, Set<String> groups) {
+        log.debug("Обрабатываем файл '{}'", fileName);
+
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("scheduleFiles/" + fileName)) {
+            if (is == null) {
+                log.warn("Файл '{}' не найден в resources", fileName);
+                return;
+            }
+
+            try (Workbook wb = new XSSFWorkbook(is)) {
+                for (int i = 0; i < wb.getNumberOfSheets(); i++) {
+                    collectGroupsFromSheet(wb.getSheetAt(i), fileName, groups);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Ошибка при обработке файла '{}'", fileName, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void collectGroupsFromSheet(Sheet sheet, String fileName, Set<String> groupNames) {
+        for (GroupSchedule gs : scanner.scan(sheet)) {
+            String groupName = gs.getGroup();
+
+            if (GroupFileMap.getPossibleFileByGroupPrefix(groupName) == null) {
+                log.warn(
+                        "Группа '{}' найдена в {}, но не сматчилась ни с одним префиксом в GroupFileMap — пропускаем",
+                        groupName,
+                        fileName
+                );
+                continue;
+            }
+
+            groupNames.add(groupName);
+        }
+    }
+
+    public void checkGroupSync(Set<String> inputGroups){
+        Set<String> dbGroups = groupRepository.findAll().stream()
+                .map(GroupEntity::getName)
+                .collect(Collectors.toSet());
+
+        Set<String> diff = new HashSet<>(inputGroups);
+        diff.removeAll(dbGroups);
+        logAboutGroups(diff);
+    }
+
+    @Async
+    public void checkGroupSync(Set<String> inputGroups, Set<String> dbGroups){
+        Set<String> diff = new HashSet<>(inputGroups);
+        diff.removeAll(dbGroups);
+        logAboutGroups(diff);
+    }
+
+    private void logAboutGroups(Set<String> diff){
+        if (!diff.isEmpty()){
+            log.warn("Найдены группы, не записанные в базу: {}", diff);
+        }
     }
 
     private boolean isAccordingToSchedule(PairSlot pair) {
