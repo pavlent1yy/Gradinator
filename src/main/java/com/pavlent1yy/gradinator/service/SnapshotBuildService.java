@@ -34,7 +34,7 @@ public class SnapshotBuildService {
             try {
                 byGroup.put(g, scheduleService.getScheduleForDate(g, date, changesByGroup.getOrDefault(g, List.of())));
             } catch (Exception e) {
-                log.error("Не удалось построить расписание для группы {}, пропускаю", g, e);
+                log.error("⭕Не удалось построить расписание для группы {}, пропускаю", g, e);
             }
         }
 

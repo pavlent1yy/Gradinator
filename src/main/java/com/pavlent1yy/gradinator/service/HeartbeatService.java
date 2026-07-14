@@ -5,8 +5,6 @@ import com.pavlent1yy.gradinator.entity.HeartbeatLog;
 import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.repository.GroupEntityRepository;
 import com.pavlent1yy.gradinator.repository.HeartbeatLogRepository;
-import jakarta.annotation.PostConstruct;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +14,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -38,7 +38,7 @@ public class HeartbeatService {
     @EventListener(ApplicationReadyEvent.class)
     public void startup() {
         if (startWithHeartbeat) {
-            log.info("\nПервый heartbeat после запуска приложения api.start-with-heartbeat={}", startWithHeartbeat);
+            log.info("🔵Первый heartbeat после запуска приложения api.start-with-heartbeat={}", startWithHeartbeat);
             run();
         }
     }
@@ -49,7 +49,9 @@ public class HeartbeatService {
     )
     public void run() {
         Instant start = Instant.now();
-        log.info("\n\nHeartbeat. Время: {} | следующий в {}", LocalTime.now(), LocalTime.now().plusMinutes(15));
+        DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        log.info("🔵Heartbeat. Время: {} | следующий в {}", dtFormatter.format(LocalTime.now()),
+                dtFormatter.format(LocalTime.now().plusMinutes(15)));
         StringBuilder message = new StringBuilder();
 
         try {
@@ -71,10 +73,17 @@ public class HeartbeatService {
 
             var todayStatus = snapshotBuildService.buildAndSave(today, groups, todaysChanges);
 
-            message.append("Status: ").append(todayStatus)
-                    .append("\nDuration: ").append(formatDuration(start))
-                    .append("\nGroups: ").append(groups.size())
-                    .append("\nSnapshot: ").append(today);
+            message.append( """
+            Status   : %s
+            Duration : %s
+            Groups   : %d
+            Snapshot : %s
+            """.formatted(
+                    todayStatus,
+                    formatDuration(start),
+                    groups.size(),
+                    today.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+            ));
 
             if (changesDate != null && changesDate.isAfter(today)) {
                 var aheadStatus = snapshotBuildService.buildAndSave(changesDate, groups, allChanges.byGroup());
@@ -84,7 +93,7 @@ public class HeartbeatService {
             saveLog(start, HeartbeatLog.Status.SUCCESS, message.toString());
 
         } catch (Exception e) {
-            log.error("Heartbeat упал", e);
+            log.error("⭕Heartbeat упал", e);
             saveLog(start, HeartbeatLog.Status.ERROR, e.getMessage());
         }
     }
@@ -98,7 +107,7 @@ public class HeartbeatService {
                 .build();
         heartbeatLog = heartbeatLogRepository.save(heartbeatLog);
 
-        log.info("\n\n----------Heartbeat #{}----------\n{}\n", heartbeatLog.getId(), heartbeatLog.getMessage());
+        log.info("\n\n❤ Heartbeat #{}\n{}\n", heartbeatLog.getId(), heartbeatLog.getMessage());
     }
 
     private String formatDuration(Instant start) {

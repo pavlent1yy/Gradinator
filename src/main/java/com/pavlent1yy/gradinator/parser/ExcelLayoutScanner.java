@@ -54,7 +54,7 @@ public class ExcelLayoutScanner {
 
         if (c0.matches("^\\d+$")) return RowType.PAIR;
 
-        log.debug("Unclassified row, c0='{}' — skipping", c0);
+        log.debug("🐜Unclassified row, c0='{}' — skipping", c0);
         return RowType.EMPTY;
     }
 
@@ -78,7 +78,7 @@ public class ExcelLayoutScanner {
 
                 case DAY -> {
                     if (group == null) {
-                        log.warn("Day row without preceding group, row {}", i);
+                        log.warn("🟠Day row without preceding group, row {}", i);
                         break;
                     }
                     day = new DaySchedule(normalizeWhitespace(cellString(row, COL_NUMBER)));
@@ -87,7 +87,7 @@ public class ExcelLayoutScanner {
 
                 case PAIR -> {
                     if (day == null) {
-                        log.warn("Pair row without preceding day, row {}", i);
+                        log.warn("🟠Pair row without preceding day, row {}", i);
                         break;
                     }
                     int num = Integer.parseInt(cellString(row, COL_NUMBER));
@@ -103,7 +103,7 @@ public class ExcelLayoutScanner {
                 }
 
                 case CONTINUATION ->
-                        log.debug("Orphan continuation at row {}, subject='{}'",
+                        log.debug("🐜Orphan continuation at row {}, subject='{}'",
                                 i, cellString(row, COL_SUBJECT));
 
                 case FOOTER, EMPTY -> { /* лютый игнор */ }

@@ -55,10 +55,6 @@ public class ScheduleService {
                 .orElseThrow();
     }
 
-    /**
-     * Расписание группы на конкретную дату, смерженное с уже готовым списком замен на эту дату.
-     * Никакого похода в веб тут больше нет — changesForGroup передаётся снаружи (из AllChanges).
-     */
     public DaySchedule getScheduleForDate(String group, LocalDate date, List<PairSlot> changesForGroup) {
         int weekDay = getScheduleDayIndex(date);
         DaySchedule schedule = getWeek(group).getDays().get(weekDay);
@@ -89,7 +85,7 @@ public class ScheduleService {
     }
 
     public List<String> getAllGroupsFromFiles() {
-        log.info("Начинаем поиск всех групп в файлах расписания");
+        log.info("🔵Поиск групп...");
 
         Set<String> groups = new HashSet<>();
 
@@ -97,17 +93,17 @@ public class ScheduleService {
             collectGroupsFromFile(fileName, groups);
         }
 
-        log.info("Найдено {} уникальных групп", groups.size());
+        log.info("✅ Найдено {} уникальных групп", groups.size());
 
         return new ArrayList<>(groups);
     }
 
     private void collectGroupsFromFile(String fileName, Set<String> groups) {
-        log.debug("Обрабатываем файл '{}'", fileName);
+        log.debug("🐜Обрабатываем файл '{}'", fileName);
 
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("scheduleFiles/" + fileName)) {
             if (is == null) {
-                log.warn("Файл '{}' не найден в resources", fileName);
+                log.warn("🟠Файл '{}' не найден в resources", fileName);
                 return;
             }
 
@@ -117,7 +113,7 @@ public class ScheduleService {
                 }
             }
         } catch (IOException e) {
-            log.error("Ошибка при обработке файла '{}'", fileName, e);
+            log.error("⭕Ошибка при обработке файла '{}'", fileName, e);
             throw new RuntimeException(e);
         }
     }
@@ -128,7 +124,7 @@ public class ScheduleService {
 
             if (GroupFileMap.getPossibleFileByGroupPrefix(groupName) == null) {
                 log.warn(
-                        "Группа '{}' найдена в {}, но не сматчилась ни с одним префиксом в GroupFileMap — пропускаем",
+                        "🟠Группа '{}' найдена в {}, но не сматчилась ни с одним префиксом в GroupFileMap — пропускаем",
                         groupName,
                         fileName
                 );
@@ -146,19 +142,19 @@ public class ScheduleService {
 
         Set<String> diff = new HashSet<>(inputGroups);
         diff.removeAll(dbGroups);
-        logAboutGroups(diff);
+        logAboutDifference(diff);
     }
 
     @Async
     public void checkGroupSync(Set<String> inputGroups, Set<String> dbGroups){
         Set<String> diff = new HashSet<>(inputGroups);
         diff.removeAll(dbGroups);
-        logAboutGroups(diff);
+        logAboutDifference(diff);
     }
 
-    private void logAboutGroups(Set<String> diff){
+    private void logAboutDifference(Set<String> diff){
         if (!diff.isEmpty()){
-            log.warn("Найдены группы, не записанные в базу: {}", diff);
+            log.warn("🟠Найдены группы, не записанные в базу: {}", diff);
         }
     }
 

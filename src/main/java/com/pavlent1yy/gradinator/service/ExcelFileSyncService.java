@@ -22,9 +22,9 @@ import java.util.List;
 @AllArgsConstructor
 public class ExcelFileSyncService {
 
-    private static final String BASE_URL = "https://ygk.edu.yar.ru/pages/rasp/25-26/";
+    private static final String BASE_URL = "https://ygk.edu.yar.ru/pages/rasp/25-26/"; // TODO: вынести в пропертис
 
-    private static final List<String> FILES = List.of(
+    private static final List<String> FILES = List.of( // TODO: вынести автозаполнение этого списка в посткострактор
             "mmo_2sem.xlsx", "oar_2sem.xlsx", "oep_2sem.xlsx", "oit_2sem.xlsx", "so_2sem.xlsx"
     );
 
@@ -33,20 +33,22 @@ public class ExcelFileSyncService {
     private final ScheduleFileRepository fileRepository;
     private final HttpClient client = HttpClient.newHttpClient();
 
-    /** true, если хотя бы один файл реально обновился */
+    // true, если хотя бы один файл реально обновился
     public boolean syncAll() {
+        log.info("🔵Синхронизация Excel файлов...");
         boolean anyChanged = false;
         for (String filename : FILES) {
             try {
                 anyChanged |= syncOne(filename);
             } catch (Exception e) {
-                log.error("Не удалось синхронизировать {}", filename, e);
+                log.error("⭕Не удалось синхронизировать {}", filename, e);
             }
         }
         return anyChanged;
     }
 
     private boolean syncOne(String filename) throws Exception {
+        log.debug("🐜Синхронизация файла {}",filename);
         ScheduleFile record = fileRepository.findByFilename(filename)
                 .orElseGet(() -> ScheduleFile.builder().filename(filename).build());
 
@@ -60,7 +62,7 @@ public class ExcelFileSyncService {
         boolean sizeChanged = remoteSize >= 0 && !Long.valueOf(remoteSize).equals(record.getSize());
 
         if (!etagChanged && !sizeChanged && record.getId() != null) {
-            return false; // метаданные не поменялись — файл не трогаем
+            return false; // метаданные не поменялись - файл не трогаем
         }
 
         HttpRequest get = HttpRequest.newBuilder(URI.create(BASE_URL + filename)).GET().build();
@@ -70,7 +72,7 @@ public class ExcelFileSyncService {
         String newHash = sha256(content);
 
         if (newHash.equals(record.getHash())) {
-            // метаданные соврали / сайт тронул только заголовки — контент тот же
+            // метаданные соврали / сайт тронул только заголовки - контент тот же
             record.setEtag(remoteEtag);
             record.setSize(remoteSize);
             fileRepository.save(record);
@@ -86,7 +88,7 @@ public class ExcelFileSyncService {
         record.setUpdatedAt(LocalDateTime.now());
         fileRepository.save(record);
 
-        log.info("Файл {} обновлён, новый hash {}", filename, newHash);
+        log.info("🔵Файл {} обновлён, новый hash {}", filename, newHash);
         return true;
     }
 

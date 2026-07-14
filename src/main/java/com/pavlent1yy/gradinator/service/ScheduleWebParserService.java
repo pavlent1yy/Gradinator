@@ -25,7 +25,7 @@ public class ScheduleWebParserService {
 
     private final WeekService weekService;
 
-    private static final String[] URLS = {
+    private static final String[] URLS = { //TODO: вынести в отдельный конфиг.файл
             "https://menu.sttec.yar.ru/timetable/rasp_second.html",
             "https://menu.sttec.yar.ru/timetable/rasp_first.html"
     };
@@ -38,6 +38,7 @@ public class ScheduleWebParserService {
     }
 
     public AllChanges getAllChanges() {
+        log.info("🔵Загрузка замен...");
         WeekType weekType = weekService.getWeekType();
         LocalDate date = null;
         Map<String, List<PairSlot>> byGroup = new HashMap<>();
@@ -60,7 +61,7 @@ public class ScheduleWebParserService {
 
                     String pairNumber = cells.get(2).text().trim();
                     if (!pairNumber.matches("^[\\d,\\-\\s]+$")) {
-                        log.debug("Пропускаю строку — не похоже на номер пары: '{}'", pairNumber);
+                        log.debug("🐜Пропускаю строку — не похоже на номер пары: '{}'", pairNumber);
                         continue;
                     }
 
@@ -71,9 +72,10 @@ public class ScheduleWebParserService {
                     byGroup.computeIfAbsent(group, k -> new ArrayList<>()).addAll(pairs);
                 }
             } catch (Exception e) {
-                log.error("Не удалось разобрать замены с {}", url, e);
+                log.error("⭕Не удалось разобрать замены с {}", url, e);
             }
         }
+
 
         return new AllChanges(date, byGroup);
     }
