@@ -55,6 +55,10 @@ public class ScheduleService {
                 .orElseThrow();
     }
 
+    public List<String> getAllGroups(){
+        return groupRepository.findAll().stream().map(GroupEntity::getName).toList();
+    }
+
     public DaySchedule getScheduleForDate(String group, LocalDate date, List<PairSlot> changesForGroup) {
         int weekDay = getScheduleDayIndex(date);
         DaySchedule schedule = getWeek(group).getDays().get(weekDay);
