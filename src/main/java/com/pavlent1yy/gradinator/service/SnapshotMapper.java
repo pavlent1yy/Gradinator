@@ -47,12 +47,14 @@ public class SnapshotMapper {
                 .append(String.join(",", cell.getRooms()));
     }
 
-    public List<ScheduleEntry> toEntries(ScheduleSnapshot snapshot, Map<String, DaySchedule> byGroup) {
+    public List<ScheduleEntry> toEntries(ScheduleSnapshot snapshot, Map<String, DaySchedule> byGroup,
+                                         Map<String, Set<Integer>> changedPairsByGroup) {
         List<ScheduleEntry> entries = new ArrayList<>();
 
         for (var e : byGroup.entrySet()) {
             String group = e.getKey();
             DaySchedule day = e.getValue();
+            Set<Integer> changedPairs = changedPairsByGroup.getOrDefault(group, Set.of());
 
             for (PairSlot pair : day.getPairs()) {
                 CellData num = pair.getNumerator();
@@ -69,6 +71,7 @@ public class SnapshotMapper {
                         .denominatorSubjects(den != null ? den.getSubjects() : List.of())
                         .denominatorTeachers(den != null ? den.getTeachers() : List.of())
                         .denominatorRooms(den != null ? den.getRooms() : List.of())
+                        .hasChanges(changedPairs.contains(pair.getPairNumber()))
                         .build());
             }
         }

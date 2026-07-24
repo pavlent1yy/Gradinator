@@ -31,6 +31,9 @@ public class ScheduleEntry {
     @Column(nullable = false)
     private Integer pairNumber;
 
+    @Column(nullable = false)
+    private boolean hasChanges;
+
     @ElementCollection @CollectionTable(name = "entry_num_subjects", joinColumns = @JoinColumn(name = "entry_id"))
     @Column(name = "subject")
     private List<String> numeratorSubjects;

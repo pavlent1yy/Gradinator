@@ -1,20 +1,17 @@
 package com.pavlent1yy.gradinator.controller;
 
-import com.pavlent1yy.gradinator.entity.ScheduleEntry;
-import com.pavlent1yy.gradinator.model.CellData;
-import com.pavlent1yy.gradinator.model.DaySchedule;
-import com.pavlent1yy.gradinator.model.PairSlot;
-import com.pavlent1yy.gradinator.repository.ScheduleEntryRepository;
-import com.pavlent1yy.gradinator.repository.ScheduleSnapshotRepository;
+import com.pavlent1yy.gradinator.dto.DayScheduleResponse;
+import com.pavlent1yy.gradinator.enums.WeekType;
+import com.pavlent1yy.gradinator.model.GroupSchedule;
+import com.pavlent1yy.gradinator.service.ScheduleQueryService;
+import com.pavlent1yy.gradinator.service.ScheduleService;
+import com.pavlent1yy.gradinator.service.WeekService;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -22,58 +19,77 @@ import java.util.Map;
 @AllArgsConstructor
 public class ScheduleController {
 
-    private final ScheduleSnapshotRepository snapshotRepository;
-    private final ScheduleEntryRepository entryRepository;
+    private final ScheduleQueryService queryService;
+    private final ScheduleService scheduleService;
+    private final WeekService weekService;
 
-    @GetMapping("/{group}")
+    @GetMapping
     public ResponseEntity<?> getSchedule(
-            @PathVariable String group,
-            @RequestParam(defaultValue = "today") String date
+            @RequestParam(required = false) String group,
+            @RequestParam(required = false) String date
     ) {
         LocalDate target;
         try {
-            target = resolveDate(date);
+            target = date == null ? LocalDate.now() : resolveDate(date);
         } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Некорректный формат даты, ожидается yyyy-MM-dd, today или tomorrow"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Некорректная дата, ожидается yyyy-MM-dd"));
+        }
+        return respondForDate(group, target);
+    }
+
+    @GetMapping("/today")
+    public ResponseEntity<?> getToday(@RequestParam(required = false) String group) {
+        return respondForDate(group, LocalDate.now());
+    }
+
+    @GetMapping("/tomorrow")
+    public ResponseEntity<?> getTomorrow(@RequestParam(required = false) String group) {
+        return respondForDate(group, LocalDate.now().plusDays(1));
+    }
+
+    @GetMapping("/yesterday")
+    public ResponseEntity<?> getYesterday(@RequestParam(required = false) String group) {
+        return respondForDate(group, LocalDate.now().minusDays(1));
+    }
+
+    @GetMapping("/week")
+    public ResponseEntity<?> getWeek(@RequestParam String group) {
+        try {
+            GroupSchedule week = scheduleService.getWeek(group);
+            return ResponseEntity.ok(week);
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(Map.of("error", "Группа '" + group + "' не найдена"));
+        }
+    }
+
+    @GetMapping("/current-weektype")
+    public ResponseEntity<?> getCurrentWeekType() {
+        WeekType type = weekService.getWeekType();
+        String label = type == WeekType.NUMERATOR ? "Числитель" : "Знаменатель";
+        return ResponseEntity.ok(Map.of("weekType", type, "label", label));
+    }
+
+    private ResponseEntity<?> respondForDate(String group, LocalDate date) {
+        if (group == null || group.isBlank()) {
+            Map<String, DayScheduleResponse> all = queryService.getForAllGroups(date);
+            if (all.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "Снапшот на дату " + date + " ещё не посчитан"));
+            }
+            return ResponseEntity.ok(all);
         }
 
-        var snapshot = snapshotRepository.findByScheduleDate(target);
-        if (snapshot.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Снапшот на дату " + target + " ещё не посчитан"));
-        }
-
-        List<ScheduleEntry> entries = entryRepository.findBySnapshot_Id(snapshot.get().getId()).stream()
-                .filter(e -> e.getGroupName().equals(group))
-                .sorted(Comparator.comparingInt(ScheduleEntry::getPairNumber))
-                .toList();
-
-        if (entries.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "Группа '" + group + "' не найдена в снапшоте на " + target));
-        }
-
-        DaySchedule result = new DaySchedule(entries.get(0).getDay());
-        for (ScheduleEntry e : entries) {
-            CellData numerator = toCellData(e.getNumeratorSubjects(), e.getNumeratorTeachers(), e.getNumeratorRooms());
-            CellData denominator = toCellData(e.getDenominatorSubjects(), e.getDenominatorTeachers(), e.getDenominatorRooms());
-            result.getPairs().add(new PairSlot(e.getPairNumber(), numerator, denominator));
-        }
-
-        return ResponseEntity.ok(result);
+        return queryService.getForGroup(group, date)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(404)
+                        .body(Map.of("error", "Нет данных для группы '" + group + "' на " + date)));
     }
 
     private LocalDate resolveDate(String date) {
         return switch (date) {
             case "today" -> LocalDate.now();
             case "tomorrow" -> LocalDate.now().plusDays(1);
+            case "yesterday" -> LocalDate.now().minusDays(1);
             default -> LocalDate.parse(date);
         };
-    }
-
-    private CellData toCellData(List<String> subjects, List<String> teachers, List<String> rooms) {
-        boolean allEmpty = subjects.isEmpty() && teachers.isEmpty() && rooms.isEmpty();
-        return allEmpty ? null : new CellData(subjects, teachers, rooms);
     }
 }

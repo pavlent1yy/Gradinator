@@ -14,6 +14,8 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -30,9 +32,13 @@ public class SnapshotBuildService {
     @Transactional
     public Status buildAndSave(LocalDate date, List<String> groups, Map<String, List<PairSlot>> changesByGroup) {
         Map<String, DaySchedule> byGroup = new HashMap<>();
+        Map<String, Set<Integer>> changedPairsByGroup = new HashMap<>();
+
         for (String g : groups) {
             try {
-                byGroup.put(g, scheduleService.getScheduleForDate(g, date, changesByGroup.getOrDefault(g, List.of())));
+                List<PairSlot> changes = changesByGroup.getOrDefault(g, List.of());
+                changedPairsByGroup.put(g, changes.stream().map(PairSlot::getPairNumber).collect(Collectors.toSet()));
+                byGroup.put(g, scheduleService.getScheduleForDate(g, date, changes));
             } catch (Exception e) {
                 log.error("⭕Не удалось построить расписание для группы {}, пропускаю", g, e);
             }
@@ -54,7 +60,7 @@ public class SnapshotBuildService {
         if (existing.isPresent()) {
             entryRepository.deleteBySnapshot_Id(snapshot.getId());
         }
-        entryRepository.saveAll(snapshotMapper.toEntries(snapshot, byGroup));
+        entryRepository.saveAll(snapshotMapper.toEntries(snapshot, byGroup, changedPairsByGroup));
 
         return status;
     }
