@@ -30,7 +30,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ExcelFileSyncService {
 
-    @Value("${api.file-source}")
+    @Value("${api.file-source-url}")
     private String sourceUrl;
     private final List<String> files;
 

@@ -3,11 +3,13 @@ package com.pavlent1yy.gradinator.service;
 import com.pavlent1yy.gradinator.enums.WeekType;
 import com.pavlent1yy.gradinator.model.CellData;
 import com.pavlent1yy.gradinator.model.PairSlot;
-import lombok.AllArgsConstructor;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jspecify.annotations.NonNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -20,15 +22,23 @@ import static com.pavlent1yy.gradinator.enums.WeekType.NUMERATOR;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ScheduleWebParserService {
 
     private final WeekService weekService;
+    @Value("${api.first-shift-url}")
+    private String firstShiftUrl;
 
-    private static final String[] URLS = { //TODO: вынести в отдельный конфиг.файл
-            "https://menu.sttec.yar.ru/timetable/rasp_second.html",
-            "https://menu.sttec.yar.ru/timetable/rasp_first.html"
-    };
+    @Value("${api.second-shift-url}")
+    private String secondShiftUrl;
+
+    private static final String[] URLs = new String[2];
+
+    @PostConstruct
+    private void uploadTimetableURLs(){
+        URLs[0] = firstShiftUrl;
+        URLs[1] = secondShiftUrl;
+    }
 
     public record AllChanges(LocalDate date, Map<String, List<PairSlot>> byGroup) {
 
@@ -43,7 +53,7 @@ public class ScheduleWebParserService {
         LocalDate date = null;
         Map<String, List<PairSlot>> byGroup = new HashMap<>();
 
-        for (String url : URLS) {
+        for (String url : URLs) {
             try {
                 Document document = Jsoup.connect(url).get();
                 LocalDate parsedDate = getDate(document);
