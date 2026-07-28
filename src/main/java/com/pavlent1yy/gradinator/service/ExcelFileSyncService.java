@@ -2,16 +2,24 @@ package com.pavlent1yy.gradinator.service;
 
 import com.pavlent1yy.gradinator.entity.ScheduleFile;
 import com.pavlent1yy.gradinator.repository.ScheduleFileRepository;
-import lombok.AllArgsConstructor;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Objects;
+import java.util.stream.Stream;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
@@ -19,14 +27,35 @@ import java.util.List;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class ExcelFileSyncService {
 
-    private static final String BASE_URL = "https://ygk.edu.yar.ru/pages/rasp/25-26/"; // TODO: вынести в пропертис
+    @Value("${api.file-source}")
+    private String sourceUrl;
+    private final List<String> files;
 
-    private static final List<String> FILES = List.of( // TODO: вынести автозаполнение этого списка в посткострактор
-            "mmo_2sem.xlsx", "oar_2sem.xlsx", "oep_2sem.xlsx", "oit_2sem.xlsx", "so_2sem.xlsx"
-    );
+    @PostConstruct
+    private void fileUpload(){
+        try {
+            Path dir = Paths.get(Objects.requireNonNull(getClass().getClassLoader()
+                            .getResource("scheduleFiles"))
+                    .toURI());
+
+            try (Stream<Path> stream = Files.list(dir)) {
+                files.clear();
+
+                stream.map(Path::getFileName)
+                        .map(Path::toString)
+                        .forEach(files::add);
+            }
+
+            System.out.println(files);
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException("Не удалось загрузить список файлов", e);
+        }
+    }
+
+
 
     private static final Path STORAGE_DIR = Path.of("src/main/resources/scheduleFiles");
 
@@ -37,7 +66,7 @@ public class ExcelFileSyncService {
     public boolean syncAll() {
         log.info("🔵Синхронизация Excel файлов...");
         boolean anyChanged = false;
-        for (String filename : FILES) {
+        for (String filename : files) {
             try {
                 anyChanged |= syncOne(filename);
             } catch (Exception e) {
@@ -52,7 +81,8 @@ public class ExcelFileSyncService {
         ScheduleFile record = fileRepository.findByFilename(filename)
                 .orElseGet(() -> ScheduleFile.builder().filename(filename).build());
 
-        HttpRequest head = HttpRequest.newBuilder(URI.create(BASE_URL + filename)).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
+        HttpRequest head = HttpRequest.newBuilder(URI.create(sourceUrl + filename))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
         HttpResponse<Void> headResponse = client.send(head, HttpResponse.BodyHandlers.discarding());
 
         String remoteEtag = headResponse.headers().firstValue("ETag").orElse(null);
@@ -65,7 +95,7 @@ public class ExcelFileSyncService {
             return false; // метаданные не поменялись - файл не трогаем
         }
 
-        HttpRequest get = HttpRequest.newBuilder(URI.create(BASE_URL + filename)).GET().build();
+        HttpRequest get = HttpRequest.newBuilder(URI.create(sourceUrl + filename)).GET().build();
         HttpResponse<byte[]> response = client.send(get, HttpResponse.BodyHandlers.ofByteArray());
         byte[] content = response.body();
 
@@ -79,7 +109,9 @@ public class ExcelFileSyncService {
             return false;
         }
 
-        Files.write(STORAGE_DIR.resolve(filename), content, StandardCopyOption.REPLACE_EXISTING == null ? new java.nio.file.OpenOption[0] : new java.nio.file.OpenOption[0]);
+        Files.write(STORAGE_DIR.resolve(filename), content,
+                StandardCopyOption.REPLACE_EXISTING == null ?
+                        new java.nio.file.OpenOption[0] : new java.nio.file.OpenOption[0]);
         Files.write(STORAGE_DIR.resolve(filename), content);
 
         record.setEtag(remoteEtag);
