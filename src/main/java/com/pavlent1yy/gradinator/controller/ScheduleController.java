@@ -2,9 +2,7 @@ package com.pavlent1yy.gradinator.controller;
 
 import com.pavlent1yy.gradinator.dto.DayScheduleResponse;
 import com.pavlent1yy.gradinator.enums.WeekType;
-import com.pavlent1yy.gradinator.model.GroupSchedule;
 import com.pavlent1yy.gradinator.service.ScheduleQueryService;
-import com.pavlent1yy.gradinator.service.ScheduleService;
 import com.pavlent1yy.gradinator.service.WeekService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +18,6 @@ import java.util.Map;
 public class ScheduleController {
 
     private final ScheduleQueryService queryService;
-    private final ScheduleService scheduleService;
     private final WeekService weekService;
 
     @GetMapping
@@ -52,15 +49,6 @@ public class ScheduleController {
         return respondForDate(group, LocalDate.now().minusDays(1));
     }
 
-    @GetMapping("/week")
-    public ResponseEntity<?> getWeek(@RequestParam String group) {
-        try {
-            GroupSchedule week = scheduleService.getWeek(group);
-            return ResponseEntity.ok(week);
-        } catch (Exception e) {
-            return ResponseEntity.status(404).body(Map.of("error", "Группа '" + group + "' не найдена"));
-        }
-    }
 
     @GetMapping("/current-weektype")
     public ResponseEntity<?> getCurrentWeekType() {
@@ -71,14 +59,14 @@ public class ScheduleController {
 
     private ResponseEntity<?> respondForDate(String group, LocalDate date) {
         if (group == null || group.isBlank()) {
-            Map<String, DayScheduleResponse> all = queryService.getForAllGroups(date);
+            Map<String, DayScheduleResponse> all = queryService.getScheduleForAllGroups(date);
             if (all.isEmpty()) {
                 return ResponseEntity.status(404).body(Map.of("error", "Снапшот на дату " + date + " ещё не посчитан"));
             }
             return ResponseEntity.ok(all);
         }
 
-        return queryService.getForGroup(group, date)
+        return queryService.getScheduleForGroup(group, date)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(404)
                         .body(Map.of("error", "Нет данных для группы '" + group + "' на " + date)));

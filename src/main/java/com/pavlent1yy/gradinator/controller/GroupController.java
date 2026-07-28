@@ -1,4 +1,5 @@
 package com.pavlent1yy.gradinator.controller;
+import com.pavlent1yy.gradinator.service.GroupService;
 import com.pavlent1yy.gradinator.service.ScheduleService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,10 +13,10 @@ import java.util.List;
 @AllArgsConstructor
 public class GroupController {
 
-    private final ScheduleService scheduleService;
+    private final GroupService groupService;
 
     @GetMapping
     public List<String> getAllGroups() {
-        return scheduleService.getAllGroups().stream().sorted().toList();
+        return groupService.getAllGroups().stream().sorted().toList();
     }
 }

@@ -1,6 +1,5 @@
 package com.pavlent1yy.gradinator.controller;
 
-import com.pavlent1yy.gradinator.service.ScheduleService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.AllArgsConstructor;

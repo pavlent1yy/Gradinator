@@ -5,16 +5,14 @@ import com.pavlent1yy.gradinator.model.DaySchedule;
 import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.repository.ScheduleEntryRepository;
 import com.pavlent1yy.gradinator.repository.ScheduleSnapshotRepository;
+import com.pavlent1yy.gradinator.enums.SnapshotBuiltStatus;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,10 +25,8 @@ public class SnapshotBuildService {
     private final ScheduleSnapshotRepository snapshotRepository;
     private final ScheduleEntryRepository entryRepository;
 
-    public enum Status { NO_CHANGES, CREATED, UPDATED }
-
     @Transactional
-    public Status buildAndSave(LocalDate date, List<String> groups, Map<String, List<PairSlot>> changesByGroup) {
+    public SnapshotBuiltStatus buildAndSave(LocalDate date, List<String> groups, Map<String, List<PairSlot>> changesByGroup) {
         Map<String, DaySchedule> byGroup = new HashMap<>();
         Map<String, Set<Integer>> changedPairsByGroup = new HashMap<>();
 
@@ -45,13 +41,13 @@ public class SnapshotBuildService {
         }
 
         String newHash = snapshotMapper.computeHash(byGroup);
-        var existing = snapshotRepository.findByScheduleDate(date);
+        Optional<ScheduleSnapshot> existing = snapshotRepository.findByScheduleDate(date);
 
         if (existing.isPresent() && existing.get().getHash().equals(newHash)) {
-            return Status.NO_CHANGES;
+            return SnapshotBuiltStatus.NO_CHANGES;
         }
 
-        Status status = existing.isPresent() ? Status.UPDATED : Status.CREATED;
+        SnapshotBuiltStatus status = existing.isPresent() ? SnapshotBuiltStatus.UPDATED : SnapshotBuiltStatus.CREATED;
 
         ScheduleSnapshot snapshot = existing.orElseGet(() -> ScheduleSnapshot.builder().scheduleDate(date).build());
         snapshot.setHash(newHash);

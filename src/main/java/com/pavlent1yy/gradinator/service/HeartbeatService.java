@@ -47,7 +47,6 @@ public class HeartbeatService {
     public void run() {
         Instant start = Instant.now();
         DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        long startTime = System.nanoTime();
         log.info("🔵Heartbeat. Время: {} | следующий в {}", dtFormatter.format(LocalTime.now()),
                 dtFormatter.format(LocalTime.now().plusMinutes(15)));
         StringBuilder message = new StringBuilder();
@@ -70,7 +69,7 @@ public class HeartbeatService {
                     : Map.of();
 
             var todayStatus = snapshotBuildService.buildAndSave(today, groups, todaysChanges);
-
+            String duration = formatDuration(start);
             message.append( """
             Status   : %s
             Duration : %s
@@ -78,7 +77,7 @@ public class HeartbeatService {
             Snapshot : %s
             """.formatted(
                     todayStatus,
-                    formatDuration(start),
+                    duration,
                     groups.size(),
                     today.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
             ));
@@ -89,7 +88,7 @@ public class HeartbeatService {
             }
 
             saveLog(start, HeartbeatLog.Status.SUCCESS, message.toString());
-            log.info("🔵Heartbeat исполнялся: {}", formatDuration(System.nanoTime() - startTime));
+            log.info("🔵Heartbeat исполнялся: {}", duration);
 
         } catch (Exception e) {
             log.error("⭕Heartbeat упал", e);
@@ -106,15 +105,11 @@ public class HeartbeatService {
                 .build();
         heartbeatLog = heartbeatLogRepository.save(heartbeatLog);
 
-        log.info("\n\n❤ Heartbeat #{}\n{}\n", heartbeatLog.getId(), heartbeatLog.getMessage());
+        log.info("\n\n❤ Heartbeat #{}\n{}", heartbeatLog.getId(), heartbeatLog.getMessage());
     }
 
     private String formatDuration(Instant start) {
         return String.format("%.1f sec", Duration.between(start, Instant.now()).toMillis() / 1000.0);
-    }
-
-    private String formatDuration(long duration){
-        return String.format("%.1f sec", duration / 1_000_000_000.0);
     }
 
 

@@ -33,15 +33,12 @@ public class ExcelFileSyncService {
     @Value("${api.file-source-url}")
     private String sourceUrl;
     private final List<String> files;
+    private static final Path STORAGE_DIR = Path.of("src/main/resources/scheduleFiles");
 
     @PostConstruct
     private void fileUpload(){
         try {
-            Path dir = Paths.get(Objects.requireNonNull(getClass().getClassLoader()
-                            .getResource("scheduleFiles"))
-                    .toURI());
-
-            try (Stream<Path> stream = Files.list(dir)) {
+            try (Stream<Path> stream = Files.list(STORAGE_DIR)) {
                 files.clear();
 
                 stream.map(Path::getFileName)
@@ -49,15 +46,11 @@ public class ExcelFileSyncService {
                         .forEach(files::add);
             }
 
-            log.info("🔵Найдено {} файлов: {}", files.size(), files);
-        } catch (IOException | URISyntaxException e) {
+            log.debug("🐜Найдено: {} файла(ов): {}", files.size(), files);
+        } catch (IOException e) {
             throw new RuntimeException("Не удалось загрузить список файлов", e);
         }
     }
-
-
-
-    private static final Path STORAGE_DIR = Path.of("src/main/resources/scheduleFiles");
 
     private final ScheduleFileRepository fileRepository;
     private final HttpClient client = HttpClient.newHttpClient();

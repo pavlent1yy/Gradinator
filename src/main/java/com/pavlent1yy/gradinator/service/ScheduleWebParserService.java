@@ -38,7 +38,7 @@ public class ScheduleWebParserService {
     private void uploadTimetableURLs(){
         URLs[0] = firstShiftUrl;
         URLs[1] = secondShiftUrl;
-        log.info("🔵Подгружены замены: {}; {}", firstShiftUrl, secondShiftUrl);
+        log.debug("🐜Подгружены замены: \n{}\n{}", firstShiftUrl, secondShiftUrl);
     }
 
     public record AllChanges(LocalDate date, Map<String, List<PairSlot>> byGroup) {

@@ -3,6 +3,7 @@ package com.pavlent1yy.gradinator.service;
 import com.pavlent1yy.gradinator.dto.DayScheduleResponse;
 import com.pavlent1yy.gradinator.dto.PairResponse;
 import com.pavlent1yy.gradinator.entity.ScheduleEntry;
+import com.pavlent1yy.gradinator.entity.ScheduleSnapshot;
 import com.pavlent1yy.gradinator.model.CellData;
 import com.pavlent1yy.gradinator.repository.ScheduleEntryRepository;
 import com.pavlent1yy.gradinator.repository.ScheduleSnapshotRepository;
@@ -22,8 +23,8 @@ public class ScheduleQueryService {
     private final ScheduleEntryRepository entryRepository;
 
     @Transactional(readOnly = true)
-    public Optional<DayScheduleResponse> getForGroup(String group, LocalDate date) {
-        var snapshot = snapshotRepository.findByScheduleDate(date);
+    public Optional<DayScheduleResponse> getScheduleForGroup(String group, LocalDate date) {
+        Optional<ScheduleSnapshot> snapshot = snapshotRepository.findByScheduleDate(date);
         if (snapshot.isEmpty()) return Optional.empty();
 
         List<ScheduleEntry> entries = entryRepository.findBySnapshot_Id(snapshot.get().getId()).stream()
@@ -37,8 +38,8 @@ public class ScheduleQueryService {
     }
 
     @Transactional(readOnly = true)
-    public Map<String, DayScheduleResponse> getForAllGroups(LocalDate date) {
-        var snapshot = snapshotRepository.findByScheduleDate(date);
+    public Map<String, DayScheduleResponse> getScheduleForAllGroups(LocalDate date) {
+        Optional<ScheduleSnapshot> snapshot = snapshotRepository.findByScheduleDate(date);
         if (snapshot.isEmpty()) return Map.of();
 
         Map<String, List<ScheduleEntry>> byGroup = entryRepository.findBySnapshot_Id(snapshot.get().getId()).stream()

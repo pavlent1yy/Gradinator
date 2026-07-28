@@ -1,11 +1,9 @@
 package com.pavlent1yy.gradinator.service;
 
-import com.pavlent1yy.gradinator.entity.GroupEntity;
 import com.pavlent1yy.gradinator.model.DaySchedule;
 import com.pavlent1yy.gradinator.model.GroupSchedule;
 import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.parser.ExcelLayoutScanner;
-import com.pavlent1yy.gradinator.repository.GroupEntityRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -19,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.pavlent1yy.gradinator.service.GroupFileMap.getPossibleFileByGroupPrefix;
 
@@ -29,7 +26,7 @@ import static com.pavlent1yy.gradinator.service.GroupFileMap.getPossibleFileByGr
 public class ScheduleService {
 
     private final ExcelLayoutScanner scanner;
-    private final GroupEntityRepository groupRepository;
+
 
     public List<GroupSchedule> getGroupSchedule(String group) {
         String fileName = getPossibleFileByGroupPrefix(group);
@@ -53,10 +50,6 @@ public class ScheduleService {
                 .filter(g -> g.getGroup().equals(group))
                 .findFirst()
                 .orElseThrow();
-    }
-
-    public List<String> getAllGroups(){
-        return groupRepository.findAll().stream().map(GroupEntity::getName).toList();
     }
 
     public DaySchedule getScheduleForDate(String group, LocalDate date, List<PairSlot> changesForGroup) {
@@ -90,14 +83,12 @@ public class ScheduleService {
 
     public List<String> getAllGroupsFromFiles() {
         log.info("🔵Поиск групп...");
-
         Set<String> groups = new HashSet<>();
 
         for (String fileName : GroupFileMap.getAllFiles()) {
             collectGroupsFromFile(fileName, groups);
         }
-
-        log.info("✅ Найдено {} уникальных групп", groups.size());
+        log.info("✅ Найдено уникальных групп: {}", groups.size());
 
         return new ArrayList<>(groups);
     }
@@ -138,16 +129,7 @@ public class ScheduleService {
             groupNames.add(groupName);
         }
     }
-
-    public void checkGroupSync(Set<String> inputGroups){
-        Set<String> dbGroups = groupRepository.findAll().stream()
-                .map(GroupEntity::getName)
-                .collect(Collectors.toSet());
-
-        Set<String> diff = new HashSet<>(inputGroups);
-        diff.removeAll(dbGroups);
-        logAboutDifference(diff);
-    }
+    
 
     @Async
     public void checkGroupSync(Set<String> inputGroups, Set<String> dbGroups){
