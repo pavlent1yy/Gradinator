@@ -49,7 +49,7 @@ public class ExcelFileSyncService {
                         .forEach(files::add);
             }
 
-            System.out.println(files);
+            log.info("🔵Найдено {} файлов: {}", files.size(), files);
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException("Не удалось загрузить список файлов", e);
         }

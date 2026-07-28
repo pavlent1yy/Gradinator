@@ -15,9 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -49,6 +47,7 @@ public class HeartbeatService {
     public void run() {
         Instant start = Instant.now();
         DateTimeFormatter dtFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        long startTime = System.nanoTime();
         log.info("🔵Heartbeat. Время: {} | следующий в {}", dtFormatter.format(LocalTime.now()),
                 dtFormatter.format(LocalTime.now().plusMinutes(15)));
         StringBuilder message = new StringBuilder();
@@ -90,6 +89,7 @@ public class HeartbeatService {
             }
 
             saveLog(start, HeartbeatLog.Status.SUCCESS, message.toString());
+            log.info("🔵Heartbeat исполнялся: {}", formatDuration(System.nanoTime() - startTime));
 
         } catch (Exception e) {
             log.error("⭕Heartbeat упал", e);
@@ -111,6 +111,10 @@ public class HeartbeatService {
 
     private String formatDuration(Instant start) {
         return String.format("%.1f sec", Duration.between(start, Instant.now()).toMillis() / 1000.0);
+    }
+
+    private String formatDuration(long duration){
+        return String.format("%.1f sec", duration / 1_000_000_000.0);
     }
 
 
