@@ -34,6 +34,8 @@ public class ExcelFileSyncService {
     private String sourceUrl;
     private final List<String> files;
     private static final Path STORAGE_DIR = Path.of("src/main/resources/scheduleFiles");
+    private final ScheduleFileRepository fileRepository;
+    private final HttpClient client = HttpClient.newHttpClient();
 
     @PostConstruct
     private void fileUpload(){
@@ -51,9 +53,6 @@ public class ExcelFileSyncService {
             throw new RuntimeException("Не удалось загрузить список файлов", e);
         }
     }
-
-    private final ScheduleFileRepository fileRepository;
-    private final HttpClient client = HttpClient.newHttpClient();
 
     // true, если хотя бы один файл реально обновился
     public boolean syncAll() {

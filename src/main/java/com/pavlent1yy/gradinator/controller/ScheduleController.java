@@ -41,7 +41,11 @@ public class ScheduleController {
 
     @GetMapping("/tomorrow")
     public ResponseEntity<?> getTomorrow(@RequestParam(required = false) String group) {
-        return respondForDate(group, LocalDate.now().plusDays(1));
+        ResponseEntity<?> response = respondForDate(group, LocalDate.now().plusDays(1));
+        if (response.getStatusCode().value() == 404){
+
+        }
+        return response;
     }
 
     @GetMapping("/yesterday")

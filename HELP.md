@@ -12,8 +12,8 @@ GET /api/rooms
 
 GET /api/search?teacher=&group=&room=&subject=&date=&pair= // DELETED, пока не понадобится 
 
-GET /api/admin/heartbeats
-GET /api/admin/heartbeats/latest
-GET /api/admin/heartbeats/{id}
+GET /api/heartbeats
+GET /api/heartbeats/latest
+GET /api/heartbeats/{id}
 GET /api/admin/snapshots
 GET /api/admin/snapshots/{id}

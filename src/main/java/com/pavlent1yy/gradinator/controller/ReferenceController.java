@@ -16,7 +16,6 @@ import java.util.TreeSet;
 @AllArgsConstructor
 public class ReferenceController {
 
-
     @PersistenceContext
     private final EntityManager em;
 
