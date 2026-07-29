@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
-public class ScheduleQueryService {
+public class QueryService {
 
     private final ScheduleSnapshotRepository snapshotRepository;
     private final ScheduleEntryRepository entryRepository;

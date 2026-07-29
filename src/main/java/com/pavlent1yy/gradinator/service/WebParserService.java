@@ -23,7 +23,7 @@ import static com.pavlent1yy.gradinator.enums.WeekType.NUMERATOR;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ScheduleWebParserService {
+public class WebParserService {
 
     private final WeekService weekService;
     @Value("${api.first-shift-url}")

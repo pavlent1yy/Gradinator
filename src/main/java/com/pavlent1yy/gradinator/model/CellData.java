@@ -26,10 +26,5 @@ public class CellData {
     public boolean isEmpty() {
         return subjects.isEmpty() && teachers.isEmpty() && rooms.isEmpty();
     }
-
-
-//    @Override
-//    public String toString() {
-//        return String.format("%s | %s | [%s]", subjects.toString(), teachers.toString(), rooms.toString()) ;
-//    }
+    
 }

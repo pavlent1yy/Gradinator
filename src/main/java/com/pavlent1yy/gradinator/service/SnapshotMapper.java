@@ -79,26 +79,6 @@ public class SnapshotMapper {
         return entries;
     }
 
-    private List<String> collect(PairSlot pair) {
-        List<String> subjects = new ArrayList<>();
-        if (pair.getNumerator() != null) subjects.addAll(pair.getNumerator().getSubjects());
-        if (pair.getDenominator() != null) subjects.addAll(pair.getDenominator().getSubjects());
-        return subjects;
-    }
-
-    private List<String> collectTeachers(PairSlot pair) {
-        List<String> teachers = new ArrayList<>();
-        if (pair.getNumerator() != null) teachers.addAll(pair.getNumerator().getTeachers());
-        if (pair.getDenominator() != null) teachers.addAll(pair.getDenominator().getTeachers());
-        return teachers;
-    }
-
-    private List<String> collectRooms(PairSlot pair) {
-        List<String> rooms = new ArrayList<>();
-        if (pair.getNumerator() != null) rooms.addAll(pair.getNumerator().getRooms());
-        if (pair.getDenominator() != null) rooms.addAll(pair.getDenominator().getRooms());
-        return rooms;
-    }
 
     private String sha256(String input) {
         try {

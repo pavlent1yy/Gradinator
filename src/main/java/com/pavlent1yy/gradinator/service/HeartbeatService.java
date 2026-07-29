@@ -1,9 +1,10 @@
 package com.pavlent1yy.gradinator.service;
 
+import com.pavlent1yy.gradinator.entity.Group;
 import com.pavlent1yy.gradinator.entity.HeartbeatLog;
 
 import com.pavlent1yy.gradinator.model.PairSlot;
-import com.pavlent1yy.gradinator.repository.GroupEntityRepository;
+import com.pavlent1yy.gradinator.repository.GroupRepository;
 import com.pavlent1yy.gradinator.repository.HeartbeatLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,9 +24,9 @@ import java.util.*;
 public class HeartbeatService {
 
     private final ExcelFileSyncService excelFileSyncService;
-    private final ScheduleWebParserService parserService;
+    private final WebParserService parserService;
     private final ScheduleService scheduleService;
-    private final GroupEntityRepository groupRepository;
+    private final GroupRepository groupRepository;
     private final HeartbeatLogRepository heartbeatLogRepository;
     private final SnapshotBuildService snapshotBuildService;
 
@@ -59,7 +60,7 @@ public class HeartbeatService {
             LocalDate changesDate = allChanges.date();
 
             List<String> groups = groupRepository.findAll().stream()
-                    .map(com.pavlent1yy.gradinator.entity.GroupEntity::getName)
+                    .map(Group::getName)
                     .toList();
 
             scheduleService.checkGroupSync(new HashSet<>(scheduleService.getAllGroupsFromFiles()), new HashSet<>(groups));

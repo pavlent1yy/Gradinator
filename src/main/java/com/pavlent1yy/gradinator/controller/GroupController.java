@@ -1,6 +1,5 @@
 package com.pavlent1yy.gradinator.controller;
 import com.pavlent1yy.gradinator.service.GroupService;
-import com.pavlent1yy.gradinator.service.ScheduleService;
 import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

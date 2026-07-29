@@ -2,7 +2,7 @@ package com.pavlent1yy.gradinator.controller;
 
 import com.pavlent1yy.gradinator.dto.DayScheduleResponse;
 import com.pavlent1yy.gradinator.enums.WeekType;
-import com.pavlent1yy.gradinator.service.ScheduleQueryService;
+import com.pavlent1yy.gradinator.service.QueryService;
 import com.pavlent1yy.gradinator.service.WeekService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +17,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class ScheduleController {
 
-    private final ScheduleQueryService queryService;
+    private final QueryService queryService;
     private final WeekService weekService;
 
     @GetMapping
@@ -41,11 +41,7 @@ public class ScheduleController {
 
     @GetMapping("/tomorrow")
     public ResponseEntity<?> getTomorrow(@RequestParam(required = false) String group) {
-        ResponseEntity<?> response = respondForDate(group, LocalDate.now().plusDays(1));
-        if (response.getStatusCode().value() == 404){
-
-        }
-        return response;
+        return respondForDate(group, LocalDate.now().plusDays(1));
     }
 
     @GetMapping("/yesterday")
@@ -73,7 +69,7 @@ public class ScheduleController {
         return queryService.getScheduleForGroup(group, date)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(404)
-                        .body(Map.of("error", "Нет данных для группы '" + group + "' на " + date)));
+                        .body(Map.of("error", "Нет актуальных данных для группы '" + group + "' на " + date)));
     }
 
     private LocalDate resolveDate(String date) {
