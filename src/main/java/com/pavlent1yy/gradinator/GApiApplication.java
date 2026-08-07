@@ -8,9 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
-public class GradinatorApplication {
+public class GApiApplication {
 	public static void main(String[] args) {
-		SpringApplication.run(GradinatorApplication.class, args);
+		SpringApplication.run(GApiApplication.class, args);
 	}
 
 }
