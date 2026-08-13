@@ -1,18 +1,55 @@
-GradInator – Proprietary License
+GradInator Proprietary License
 
-Copyright © 2026 Pavel Khuharev. All rights reserved.
+Copyright (c) 2026 Pavel Khuharev
+All Rights Reserved.
 
-The source code of this project is publicly available for viewing and educational/reference purposes only.
+The GradInator source code is made publicly available for viewing,
+inspection, and educational/reference purposes only.
 
-Without explicit written permission from the copyright holder, you may not:
+Unless explicitly permitted in writing by the copyright holder, no person
+or organization is granted the right to:
 
-copy or redistribute the source code;
-create or distribute derivative works;
-use the source code or any substantial part of it in another project;
-deploy or operate your own instance of the software;
-use the software for commercial purposes;
-sublicense or sell the software.
+1. Copy, reproduce, or redistribute the source code or substantial portions
+   of it;
 
-Permission to access the source code does not constitute permission to use, modify, reproduce, distribute, deploy, or sublicense the software.
+2. Create, publish, or distribute forks or derivative works based on the
+   source code;
 
-The copyright holder reserves all rights not expressly granted by this license.
+3. Modify, adapt, translate, or otherwise create derivative versions of
+   the software;
+
+4. Deploy, host, install, or operate an independent instance of GradInator;
+
+5. Incorporate the source code, in whole or in substantial part, into
+   another software project;
+
+6. Use the software or its source code for commercial purposes;
+
+7. Sell, sublicense, lease, or otherwise transfer rights to the software
+   or source code.
+
+Viewing, downloading, or accessing this repository does not grant any
+license or permission beyond the limited right to inspect the source code.
+
+The copyright holder retains all rights not expressly granted by this
+license.
+
+Permission to use, modify, deploy, distribute, or otherwise utilize
+GradInator may be granted separately and in writing by the copyright
+holder.
+
+GradInator is an independent software project and this license does not
+grant any rights to trademarks, logos, names, or other intellectual
+property belonging to third parties.
+
+This license applies to this version of GradInator and all future
+versions, releases, and modifications distributed by the copyright holder.
+
+Previous versions of GradInator that were explicitly distributed under
+a different license remain subject to the terms of that license.
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. IN NO EVENT SHALL
+THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+ARISING FROM THE USE OF THE SOFTWARE.
