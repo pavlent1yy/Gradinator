@@ -1,0 +1,202 @@
+:root{
+  /* палитра: бумага + усилённые чернильные оттенки */
+  --paper-ivory: #FBF6EE;
+  --paper-parchment:#F4E8D0;
+  --ink-dark:#0A0F14;      /* near-black ink */
+  --ink-stripe:#7A2E27;    /* тёмно-красная чернильная полоса */
+  --pen-brown:#4F2B20;
+  --pen-red:#7D2B24;
+  --pen-green:#2F4028;
+  --muted-gray: rgba(11,19,32,0.06);
+  --max-width:1100px;
+  --mono: "Roboto Mono", monospace;
+  --ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --display: "Oswald", "Segoe UI", Roboto, Arial, sans-serif;
+  --hand: "Patrick Hand", "Segoe Script", cursive;
+}
+
+/* Reset */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:var(--ui);
+  background:var(--paper-ivory);
+  color:var(--ink-dark);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  padding:28px 16px;
+  display:flex;
+  justify-content:center;
+}
+
+/* контейнер — overflow visible чтобы dropdown не прятался */
+.app{
+  width:100%;
+  max-width:var(--max-width);
+  background:var(--paper-parchment);
+  border:1px solid var(--muted-gray);
+  padding:20px;
+  box-shadow: 0 10px 30px rgba(10,15,20,0.04);
+  border-radius:10px;
+  position:relative;
+  overflow:visible;
+}
+
+/* Masthead */
+.masthead{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:18px;
+  margin-bottom:18px;
+  border-bottom:1px solid rgba(11,19,32,0.04);
+  padding-bottom:12px;
+}
+.meta-row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.day{ font-weight:700; color:var(--pen-brown); font-size:13px; text-transform:uppercase; letter-spacing:0.6px; }
+.date{ font-family:var(--mono); font-size:13px; color:var(--ink-dark); margin-top:4px; }
+.week-badge{ font-family:var(--display); font-size:15px; color:var(--pen-red); font-weight:700; padding:6px 10px; border-radius:6px; border:1px solid rgba(11,19,32,0.03); background:transparent; }
+
+/* Combobox */
+.group-row{margin-top:12px}
+.combo{ position:relative; width:260px; font-weight:600; z-index:1200; }
+.combo-toggle{
+  display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;
+  padding:10px 14px; background:transparent; border:1px solid rgba(11,19,32,0.06); border-radius:8px; cursor:pointer;
+  font-size:16px; color:var(--ink-dark); box-shadow: 0 4px 10px rgba(11,19,32,0.03);
+}
+.combo-toggle:focus{ outline:2px solid rgba(125,43,36,0.10); }
+.combo-toggle .chev{ color:var(--pen-brown); transition:transform .2s ease; }
+.combo-list{
+  position:absolute; left:0; top:calc(100% + 10px); width:100%; background:var(--paper-ivory);
+  border-radius:8px; padding:10px; list-style:none; margin:0; box-shadow: 0 18px 40px rgba(11,19,32,0.12);
+  transform-origin: top center; transform: translateY(-8px) scale(.98); opacity:0; pointer-events:none;
+  transition:opacity .22s ease, transform .22s cubic-bezier(.2,.9,.2,1);
+  border:1px solid rgba(11,19,32,0.05); z-index:1300;
+}
+.combo-list.open{ transform: translateY(0) scale(1); opacity:1; pointer-events:auto; }
+.combo-list::before{ content:""; position:absolute; top:-8px; left:0; right:0; height:8px; background-image: repeating-linear-gradient(90deg, rgba(11,19,32,0.03) 0 2px, transparent 2px 6px); border-top-left-radius:8px; border-top-right-radius:8px; opacity:0.9; pointer-events:none; }
+.combo-list li{ padding:8px 10px; border-radius:6px; margin:4px 0; cursor:pointer; transition:background .12s ease, transform .12s ease; font-size:15px; color:var(--ink-dark); }
+.combo-list li:hover{ background: rgba(125,43,36,0.06); transform:translateX(6px) }
+.combo-list li[aria-selected="true"]{ background: rgba(125,43,36,0.10); color:var(--pen-red); font-weight:700 }
+
+/* Controls */
+.mast-right{text-align:right;min-width:220px}
+.logo{ font-family:var(--display); font-size:18px; color:var(--pen-brown); letter-spacing:1px; font-weight:700; }
+.controls{display:flex;align-items:center;gap:12px;justify-content:flex-end;margin-top:6px}
+.icon-btn{ width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid rgba(11,19,32,0.06);border-radius:8px;cursor:pointer;transition:transform .18s ease; }
+.icon-btn:active{transform:scale(.98)}
+.icon-btn.btn-spin svg{ animation: spin .6s linear; }
+@keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+/* updated note emphasised */
+.updated-note{ font-family:var(--hand); font-size:13px; color:var(--pen-red); padding:6px 10px; border-radius:6px; border:1px dashed rgba(125,43,36,0.08); min-width:170px; text-align:right; font-weight:700; }
+
+/* Schedule: цельная блочная таблица */
+.schedule{ display: grid; gap:12px; margin-top:16px; }
+
+/* единый блок пары — цельный карточный ряд */
+.pair{
+  display:grid;
+  grid-template-columns:94px 1fr;
+  gap:0;
+  align-items:stretch;
+  border-radius:8px;
+  background:var(--paper-ivory);
+  border:1px solid rgba(11,19,32,0.06);
+  overflow:visible;
+  position:relative;
+}
+
+/* тонкая выразительная полоса справа от номера — чернильный оттиск */
+.pair::after{
+  content:"";
+  position:absolute;
+  left:94px;
+  top:6px;
+  bottom:6px;
+  width:6px;
+  background: linear-gradient(180deg, var(--ink-stripe), var(--pen-green));
+  opacity:0.12;
+  border-radius:3px;
+}
+
+/* левый блок: номер пары — выглядит как часть карточки */
+.pair-num{
+  font-family:var(--display);
+  font-size:56px;
+  color:var(--ink-dark);
+  text-align:center;
+  padding:18px 8px;
+  margin:0;
+  background:transparent;
+  border-right: none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* правая часть — контент пары */
+.pair-body{
+  padding:14px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+/* карточка занятия теперь не отдельный "entry", а содержимое внутри pair-body */
+.entry{
+  background:transparent;
+  border:none;
+  padding:0;
+  margin:0;
+}
+
+/* subject и метаданные */
+.subject{ margin:0 0 6px 0; font-size:18px; font-weight:700; color:var(--ink-dark); font-family:var(--display) }
+
+/* room и teachers — выделены серым фоном, тихим цветом */
+.meta-row-lesson{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.room{
+  font-family:var(--mono);
+  font-size:13px;
+  color:rgba(11,19,32,0.68);
+  padding:6px 8px;
+  border-radius:6px;
+  background: rgba(11,19,32,0.04);
+  border:1px solid rgba(11,19,32,0.02);
+}
+.teachers{
+  font-size:13px;
+  color:rgba(11,19,32,0.66);
+  padding:6px 8px;
+  border-radius:6px;
+  background: rgba(11,19,32,0.04);
+  border:1px solid rgba(11,19,32,0.02);
+}
+
+/* Время пары — монохромно, неброско */
+.pair-time{ font-family:var(--mono); font-size:13px; color:var(--pen-green) }
+
+/* Убрал hover-подъём и лишние анимации — статично */
+.pair:hover{ transform:none; box-shadow:none }
+
+/* Footer */
+.page-foot{ margin-top:18px; display:flex; justify-content:space-between; font-size:12px; color:rgba(11,19,32,0.55); border-top:1px solid rgba(11,19,32,0.04); padding-top:12px; font-family:var(--mono) }
+
+/* Responsive */
+@media (max-width:880px){
+  .masthead{ flex-direction:column; align-items:stretch; gap:12px }
+  .combo{ width:100% }
+  .pair{ grid-template-columns:68px 1fr }
+  .pair-num{ font-size:44px; padding:14px 6px }
+  .pair-body{ padding:12px }
+  .app{ padding:14px }
+}
+@media (max-width:540px){
+  .pair{ grid-template-columns:56px 1fr }
+  .pair-num{ font-size:36px; padding:10px 4px }
+  .subject{ font-size:16px }
+  .updated-note{ font-size:12px }
+}
