@@ -1,4 +1,4 @@
-package com.pavlen1yy.gcore;
+package com.pavlent1yy.gcore;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
