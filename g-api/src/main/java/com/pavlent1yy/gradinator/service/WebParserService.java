@@ -124,6 +124,45 @@ public class WebParserService {
         return LocalDate.parse(matcher.group(1), formatter);
     }
 
+    public LocalDate getDateFromChangesURL() {
+        LocalDate firstShiftDate = null;
+        LocalDate secondShiftDate = null;
+
+        try {
+            firstShiftDate = getDate(Jsoup.connect(this.firstShiftUrl).get());
+        } catch (Exception e) {
+            log.warn("Не удалось получить дату с первого URL: {}", firstShiftUrl, e);
+        }
+
+        try {
+            secondShiftDate = getDate(Jsoup.connect(this.secondShiftUrl).get());
+        } catch (Exception e) {
+            log.warn("Не удалось получить дату со второго URL: {}", secondShiftUrl, e);
+        }
+
+        if (firstShiftDate == null && secondShiftDate == null) {
+            throw new IllegalStateException("Не удалось получить дату ни с одного URL");
+        }
+
+        if (firstShiftDate == null) {
+            return secondShiftDate;
+        }
+
+        if (secondShiftDate == null) {
+            return firstShiftDate;
+        }
+
+        if (!firstShiftDate.isEqual(secondShiftDate)) {
+            log.warn(
+                    "⚠️ Даты первой и второй смены не совпадают: {} != {}. Использую дату первой смены.",
+                    firstShiftDate,
+                    secondShiftDate
+            );
+        }
+
+        return firstShiftDate;
+    }
+
     private static @NonNull PairSlot buildPairSlot(Integer pairNumber, String subject, String room, WeekType weekType) {
         PairSlot pairSlot = new PairSlot();
         pairSlot.setPairNumber(pairNumber);

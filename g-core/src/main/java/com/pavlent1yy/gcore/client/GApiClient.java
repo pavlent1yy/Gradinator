@@ -1,5 +1,6 @@
 package com.pavlent1yy.gcore.client;
 
+import com.pavlent1yy.gcore.customExceptions.ScheduleNotFoundException;
 import com.pavlent1yy.gcore.dto.ScheduleResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
@@ -23,6 +24,18 @@ public class GApiClient {
                         .queryParam("date", date)
                         .build())
                 .retrieve()
+                .onStatus(
+                        status -> status.value() == 404,
+                        (request, response) -> {
+                            try {
+                                throw new ScheduleNotFoundException(
+                                        "Нет актуальных данных для группы '" + group + "' на " + date
+                                );
+                            } catch (ScheduleNotFoundException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                )
                 .body(ScheduleResponse.class);
     }
 

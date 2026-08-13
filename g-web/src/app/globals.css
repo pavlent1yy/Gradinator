@@ -235,3 +235,52 @@ body{
 @media (max-width:540px){
   .combo.combo--small{ width:100%; }
 }
+
+/* Добавьте в конец файла */
+
+.date-nav{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:6px;
+}
+.date-label{ font-family:var(--mono); font-size:13px; color:var(--ink-dark); }
+.date-btn{
+  width:34px;
+  height:34px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  border:1px solid rgba(11,19,32,0.06);
+  background:transparent;
+  cursor:pointer;
+  font-size:20px;
+  color:var(--pen-brown);
+}
+.date-btn:active{ transform:scale(.97) }
+.date-btn:focus{ outline:2px solid rgba(125,43,36,0.10); }
+
+
+/* добавьте в конец файла или в раздел Schedule/Card */
+
+.pair.warning{
+  background: #fff6f6;
+  border-color: rgba(125,43,36,0.12);
+  color: var(--pen-red);
+}
+.pair.warning strong{ font-weight:700; }
+
+
+/* добавьте в конец файла (или в место с note-стилями) */
+
+.warning-note{
+  font-family:var(--ui);
+  font-size:14px;
+  color:#6b3c00; /* тёплый коричнево-янтарный */
+  background: rgba(255, 243, 205, 0.9); /* бледно-янтарный фон */
+  border: 1px solid rgba(201, 146, 0, 0.12);
+  padding:10px 12px;
+  border-radius:8px;
+  font-weight:600;
+}
