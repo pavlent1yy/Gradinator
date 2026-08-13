@@ -29,6 +29,8 @@ function toIsoDate(d = new Date()) {
   return d.toISOString().slice(0, 10);
 }
 
+const STORAGE_KEY = 'gradinator.selectedGroup';
+
 export default function Page() {
   const [groups, setGroups] = useState<string[]>([]);
   const [group, setGroup] = useState<string>('');
@@ -61,7 +63,14 @@ export default function Page() {
       const data = await res.json();
       if (!Array.isArray(data)) throw new Error('Неверный формат групп');
       setGroups(data);
-      if (data.length) setGroup(prev => prev || data[0]);
+
+      // попробуем восстановить из localStorage
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+      if (stored && data.includes(stored)) {
+        setGroup(stored);
+      } else {
+        setGroup(data.length ? data[0] : '');
+      }
     } catch (e: any) {
       console.error(e);
       setError(e?.message || String(e));
@@ -91,6 +100,15 @@ export default function Page() {
     if (!group) return;
     fetchSchedule(group, date);
   }
+
+  // сохраняем выбор группы при изменении
+  useEffect(() => {
+    if (group) {
+      try {
+        localStorage.setItem(STORAGE_KEY, group);
+      } catch {}
+    }
+  }, [group]);
 
   const anyNumeratorPairs = useMemo(() => {
     return schedule?.pairs?.some(p => p.numerator && !p.numerator.empty);
@@ -155,7 +173,7 @@ export default function Page() {
             <div key={pair.pairNumber} className="pair">
               <div className="pair-num">{pair.pairNumber ?? '—'}</div>
               <div className="pair-body">
-                <div className="pair-time mono">{TIMES_MAP[pair.pairNumber as number] || '—'}</div>
+                {/* Время убрано по задаче */}
 
                 <div className="entry">
                   <h3 className="subject">{(numerator.subjects && numerator.subjects[0]) || 'Предмет'}</h3>

@@ -9,6 +9,8 @@ type Props = {
   onChange: (v: string) => void;
 };
 
+const STORAGE_KEY = 'gradinator.selectedGroup';
+
 export default function Combo({ label = 'Выбрать', options, value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
@@ -19,7 +21,6 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
     if (!open) {
       setFocusedIndex(options.findIndex(o => o === value));
     } else {
-      // open -> focus first selected or 0
       setFocusedIndex(options.findIndex(o => o === value) ?? 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,7 +60,9 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (focusedIndex >= 0 && options[focusedIndex]) {
-        onChange(options[focusedIndex]);
+        const sel = options[focusedIndex];
+        onChange(sel);
+        try { localStorage.setItem(STORAGE_KEY, sel); } catch {}
         setOpen(false);
       }
     } else if (e.key === 'Escape') {
@@ -77,7 +80,7 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
   const selectedLabel = useMemo(() => value || '—', [value]);
 
   return (
-    <div id="combo" className="combo" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls="combo-list" aria-labelledby="combo-label">
+    <div id="combo" className="combo combo--small" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls="combo-list" aria-labelledby="combo-label">
       <div className="combo-field" id="combo-label">
         <button
           ref={toggleRef}
@@ -109,7 +112,7 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
             data-value={opt}
             aria-selected={opt === value}
             className={focusedIndex === idx ? 'focused' : undefined}
-            onClick={() => { onChange(opt); setOpen(false); }}
+            onClick={() => { onChange(opt); try { localStorage.setItem(STORAGE_KEY, opt); } catch {} setOpen(false); }}
             onMouseEnter={() => setFocusedIndex(idx)}
           >
             {opt}

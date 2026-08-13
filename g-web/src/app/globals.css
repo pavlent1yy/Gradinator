@@ -200,3 +200,38 @@ body{
   .subject{ font-size:16px }
   .updated-note{ font-size:12px }
 }
+
+/* ... (предыдущий файл остаётся тем же, поменял только часть, дублирую ключевые изменения) */
+
+.combo{ position:relative; width:260px; font-weight:600; z-index:1200; }
+
+/* маленькая вариация */
+.combo.combo--small{ width:180px; }
+
+/* список — ограничим высоту и включим прокрутку */
+.combo-list{
+  position:absolute; left:0; top:calc(100% + 10px); width:100%; background:var(--paper-ivory);
+  border-radius:8px; padding:6px; list-style:none; margin:0; box-shadow: 0 18px 40px rgba(11,19,32,0.12);
+  transform-origin: top center; transform: translateY(-8px) scale(.98); opacity:0; pointer-events:none;
+  transition:opacity .22s ease, transform .22s cubic-bezier(.2,.9,.2,1);
+  border:1px solid rgba(11,19,32,0.05); z-index:1300;
+
+  max-height: 400px; /* <-- ограничение высоты */
+  overflow: auto;   /* <-- включаем скролл */
+  padding-right: 6px; /* небольшая подушка для скролла */
+}
+
+/* кастомный простой скролл для WebKit */
+.combo-list::-webkit-scrollbar{ width:8px; }
+.combo-list::-webkit-scrollbar-thumb{ background: rgba(11,19,32,0.12); border-radius:8px; }
+.combo-list::-webkit-scrollbar-track{ background: transparent; }
+
+/* уменьшил отступы элементов для компактности */
+.combo-list li{ padding:6px 8px; border-radius:6px; margin:4px 0; cursor:pointer; transition:background .12s ease, transform .12s ease; font-size:14px; color:var(--ink-dark); }
+.combo-list li:hover{ background: rgba(125,43,36,0.06); transform:translateX(4px) }
+.combo-list li[aria-selected="true"]{ background: rgba(125,43,36,0.10); color:var(--pen-red); font-weight:700 }
+
+/* при мобильной ширине сделаем combo снова full width */
+@media (max-width:540px){
+  .combo.combo--small{ width:100%; }
+}
