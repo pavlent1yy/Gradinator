@@ -52,7 +52,7 @@ public class ScheduleController {
 
     @GetMapping("/current-weektype")
     public ResponseEntity<?> getCurrentWeekType() {
-        WeekType type = weekService.getWeekType();
+        WeekType type = weekService.getCurrentWeekType();
         String label = type == WeekType.NUMERATOR ? "Числитель" : "Знаменатель";
         return ResponseEntity.ok(Map.of("weekType", type, "label", label));
     }

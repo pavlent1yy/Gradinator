@@ -13,16 +13,20 @@ import static com.pavlent1yy.gradinator.enums.WeekType.NUMERATOR;
 
 @Service
 public class WeekService {
-    public WeekType getWeekType() {
+    public WeekType getCurrentWeekType() {
         LocalDate today = LocalDate.now();
-        int currentYear = today.getYear();
+        return getWeekTypeByDate(today);
+    }
+
+    public WeekType getWeekTypeByDate(LocalDate date){
+        int currentYear = date.getYear();
         LocalDate startOfAcademicYear = LocalDate.of(currentYear, Month.SEPTEMBER, 1);
 
-        if (today.isBefore(startOfAcademicYear)) {
+        if (date.isBefore(startOfAcademicYear)) {
             startOfAcademicYear = LocalDate.of(currentYear - 1, Month.SEPTEMBER, 1);
         }
 
-        long weeksBetween = ChronoUnit.WEEKS.between(startOfAcademicYear, today);
+        long weeksBetween = ChronoUnit.WEEKS.between(startOfAcademicYear, date);
         return weeksBetween % 2 == 0 ? DENOMINATOR : NUMERATOR;
     }
 

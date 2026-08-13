@@ -21,6 +21,7 @@ public class QueryService {
 
     private final ScheduleSnapshotRepository snapshotRepository;
     private final ScheduleEntryRepository entryRepository;
+    private final WeekService weekService;
 
     @Transactional(readOnly = true)
     public Optional<DayScheduleResponse> getScheduleForGroup(String group, LocalDate date) {
@@ -65,7 +66,7 @@ public class QueryService {
                 ))
                 .toList();
 
-        return new DayScheduleResponse(group, entries.get(0).getDay(), date, pairs);
+        return new DayScheduleResponse(group, entries.get(0).getDay(), weekService.getWeekTypeByDate(date), date, pairs);
     }
 
     private CellData toCellData(List<String> subjects, List<String> teachers, List<String> rooms) {

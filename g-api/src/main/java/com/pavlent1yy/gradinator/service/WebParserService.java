@@ -50,7 +50,7 @@ public class WebParserService {
 
     public AllChanges getAllChanges() {
         log.info("🔵Загрузка замен...");
-        WeekType weekType = weekService.getWeekType();
+        WeekType weekType = weekService.getCurrentWeekType();
         LocalDate date = null;
         Map<String, List<PairSlot>> byGroup = new HashMap<>();
 
