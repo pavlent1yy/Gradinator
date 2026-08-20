@@ -13,6 +13,7 @@ export default function Page() {
     date,
     prevDate,
     nextDate,
+    setDate,    // <-- используется для onPick
     schedule,
     refresh,
     loading,
@@ -31,7 +32,7 @@ export default function Page() {
             <div>
               <div className="day" id="day-label">{schedule?.day || '—'}</div>
               {/* IMPORTANT: show the requested date immediately (date state), not schedule.date */}
-              <DateNav dateIso={date} onPrev={prevDate} onNext={nextDate} />
+			<DateNav dateIso={date} onPrev={prevDate} onNext={nextDate} onPick={setDate} />
             </div>
             <div className="week-badge" id="week-badge" aria-hidden="true">
               {schedule?.weekType === 'NUMERATOR' ? 'Числитель' : 'Числитель'}
