@@ -10,7 +10,6 @@ export async function fetchGroups(): Promise<string[]> {
   return data;
 }
 
-// NOTE: backend may return { error: "..." } with 200 OK — treat that as a valid response (warning)
 export async function fetchSchedule(group: string, dateIso: string): Promise<Schedule | { error: string }> {
   const url = `${API_BASE}/schedule?group=${encodeURIComponent(group)}&date=${encodeURIComponent(dateIso)}`;
   const res = await fetch(url);

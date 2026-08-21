@@ -338,3 +338,13 @@ body{
   color:white;
   border-color:transparent;
 }
+
+.nav-link{
+  margin-right:10px;
+  font-size:14px;
+  color:var(--ink-dark);
+  text-decoration:none;
+  padding:6px 8px;
+  border-radius:6px;
+}
+.nav-link:hover{ background: rgba(11,19,32,0.03); }
