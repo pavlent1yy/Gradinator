@@ -8,7 +8,7 @@ import jakarta.persistence.*;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_user_favorite_group",
-                        columnNames = {"user_id", "group"}
+                        columnNames = {"user_id", "group_name"}
                 )
         }
 )
@@ -23,6 +23,9 @@ public class UserFavoriteGroup {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "\"group\"", nullable = false)
+    @Column(name = "\"group_name\"", nullable = false)
     private String group;
+
+    @ManyToOne
+    private UserSettings userSettings;
 }

@@ -1,5 +1,6 @@
 package com.pavlent1yy.gcore.entity;
 
+import com.pavlent1yy.gcore.enums.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -17,18 +18,19 @@ public class User {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "group")
+    @Column(name = "group_name")
     private String group;
 
+    @Enumerated(EnumType.STRING)
     @ColumnDefault("'STUDENT'")
     @Column(name = "role", nullable = false, length = 50)
-    private String role;
+    private Role role;
 
     @ColumnDefault("now()")
     @Column(name = "registered_at")
