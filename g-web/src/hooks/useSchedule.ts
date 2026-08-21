@@ -3,12 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Schedule } from '../types/schedule';
 import * as api from '../lib/api';
+import { toIsoDate } from '../lib/date';
 
 const STORAGE_KEY = 'gradinator.selectedGroup';
-
-function toIsoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
 
 export default function useSchedule(initialDate?: string) {
   const todayIso = initialDate ?? toIsoDate(new Date());

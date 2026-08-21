@@ -2,51 +2,63 @@
 
 import { useMemo } from 'react';
 import { useScheduleContext } from './providers/ScheduleProvider';
-import type { Pair } from '../types/schedule';
+import { weekTypeLabel } from '../lib/date';
+import { joinList, pickSlot } from '../lib/schedule';
 
 export default function Page() {
-  const {
-    schedule,
-    loading,
-    error,
-    warning
-  } = useScheduleContext();
+  const { schedule, loading, error, warning } = useScheduleContext();
 
-  const anyNumeratorPairs = useMemo(() => schedule?.pairs?.some(p => p.numerator && !p.numerator.empty), [schedule]);
+  const weekType = schedule?.weekType;
+  const weekLabel = weekTypeLabel(weekType).toLowerCase();
+
+  const visiblePairs = useMemo(() => {
+    if (!schedule?.pairs) return [];
+    return schedule.pairs
+      .slice()
+      .sort((a, b) => (a.pairNumber || 0) - (b.pairNumber || 0))
+      .map((pair) => ({ pair, slot: pickSlot(pair, weekType) }))
+      .filter((item) => item.slot);
+  }, [schedule, weekType]);
 
   return (
     <section className="schedule" id="schedule" aria-label="Расписание">
-      {/* Server-side informational warning (not network error) */}
       {warning && (
-        <div className="pair" style={{ gridTemplateColumns: '1fr', padding: 12 }}>
-          <div className="warning-note"><strong>Подождите:</strong> {warning}</div>
+        <div className="status-card status-card--warn" role="status">
+          <strong>Подождите:</strong> {warning}
         </div>
       )}
 
-      {error && <div className="pair" style={{ padding: 12 }}>Ошибка: {error}</div>}
-      {!schedule && !error && !warning && <div className="pair" style={{ padding: 12 }}>{loading ? 'Загрузка...' : 'Нет данных'}</div>}
+      {error && (
+        <div className="status-card status-card--error" role="alert">
+          Ошибка: {error}
+        </div>
+      )}
 
-      {schedule && schedule.pairs?.slice().sort((a,b)=> (a.pairNumber||0)-(b.pairNumber||0)).map((pair: Pair) => {
-        const numerator = pair.numerator;
-        if (!numerator || numerator.empty) return null;
-        return (
-          <div key={pair.pairNumber} className="pair">
-            <div className="pair-num">{pair.pairNumber ?? '—'}</div>
-            <div className="pair-body">
-              <div className="entry">
-                <h3 className="subject">{(numerator.subjects && numerator.subjects[0]) || 'Предмет'}</h3>
-                <div className="meta-row-lesson">
-                  <span className="room mono">{(numerator.rooms && numerator.rooms[0]) || '—'}</span>
-                  <span className="teachers">{(numerator.teachers || []).join(', ')}</span>
-                </div>
+      {!schedule && !error && !warning && (
+        <div className="status-card" role="status">
+          {loading ? 'Загрузка…' : 'Нет данных'}
+        </div>
+      )}
+
+      {visiblePairs.map(({ pair, slot }) => (
+        <article key={pair.pairNumber} className={`pair${pair.hasChanges ? ' pair--changed' : ''}`}>
+          <div className="pair-num">{pair.pairNumber ?? '—'}</div>
+          <div className="pair-body">
+            <div className="entry">
+              <h3 className="subject">{joinList(slot?.subjects, 'Предмет')}</h3>
+              <div className="meta-row-lesson">
+                <span className="room mono">{joinList(slot?.rooms)}</span>
+                <span className="teachers">{joinList(slot?.teachers)}</span>
               </div>
             </div>
           </div>
-        );
-      })}
+        </article>
+      ))}
 
-      {schedule && !anyNumeratorPairs && (
-        <div className="pair" style={{ gridTemplateColumns: '1fr', padding: 12 }}>На этой неделе занятий по числителю нет.</div>
+      {schedule && !loading && visiblePairs.length === 0 && !warning && !error && (
+        <div className="status-card" role="status">
+          На этой неделе ({weekLabel}) занятий нет.
+        </div>
       )}
     </section>
   );

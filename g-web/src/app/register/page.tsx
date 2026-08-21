@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import * as api from '../../lib/api';
 
 type RegisterPayload = {
@@ -17,7 +18,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [group, setGroup] = useState<string>('');
+  const [group, setGroup] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [clientError, setClientError] = useState<string | null>(null);
@@ -25,9 +26,8 @@ export default function RegisterPage() {
   useEffect(() => {
     (async () => {
       try {
-        const g = await api.fetchGroups();
-        setGroups(g);
-      } catch (e: any) {
+        setGroups(await api.fetchGroups());
+      } catch (e) {
         console.error(e);
       }
     })();
@@ -37,7 +37,6 @@ export default function RegisterPage() {
     if (!email.trim()) return 'Email обязателен';
     if (!password) return 'Пароль обязателен';
     if (password !== confirmPassword) return 'Пароли не совпадают';
-    // optionally validate email format here (simple)
     if (!/^\S+@\S+\.\S+$/.test(email)) return 'Некорректный email';
     return null;
   }
@@ -69,12 +68,9 @@ export default function RegisterPage() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        // server error response
-        const msg = data && data.error ? data.error : `Ошибка: ${res.status}`;
-        setServerMessage(msg);
+        setServerMessage(data?.error ? data.error : `Ошибка: ${res.status}`);
       } else {
-        // success — redirect to login or show message
-        setServerMessage('Регистрация прошла успешно. Перенаправление на страницу входа...');
+        setServerMessage('Регистрация прошла успешно. Перенаправление на страницу входа…');
         setTimeout(() => router.push('/login'), 1200);
       }
     } catch (err: any) {
@@ -85,43 +81,77 @@ export default function RegisterPage() {
   }
 
   return (
-    <main style={{ padding: 12, maxWidth: 720, margin: '0 auto' }}>
-      <h1>Регистрация</h1>
+    <section className="auth-panel" aria-labelledby="register-title">
+      <h1 id="register-title" className="auth-title">Регистрация</h1>
+      <p className="auth-lead">Создайте аккаунт, чтобы сохранять группу и настройки.</p>
 
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 10 }}>
-        <label>
-          Email
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+      <form className="auth-form" onSubmit={onSubmit}>
+        <label className="field">
+          <span className="field-label">Email</span>
+          <input
+            className="field-input"
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            autoComplete="email"
+            required
+          />
         </label>
 
-        <label>
-          Пароль
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <label className="field">
+          <span className="field-label">Пароль</span>
+          <input
+            className="field-input"
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            autoComplete="new-password"
+            required
+          />
         </label>
 
-        <label>
-          Подтвердите пароль
-          <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+        <label className="field">
+          <span className="field-label">Подтвердите пароль</span>
+          <input
+            className="field-input"
+            type="password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            required
+          />
         </label>
 
-        <label>
-          Группа (необязательно)
-          <select value={group} onChange={e => setGroup(e.target.value || '')}>
+        <label className="field">
+          <span className="field-label">Группа (необязательно)</span>
+          <select
+            className="field-input field-select"
+            value={group}
+            onChange={e => setGroup(e.target.value || '')}
+          >
             <option value="">— без группы —</option>
-            {groups.map(g => <option key={g} value={g}>{g}</option>)}
+            {groups.map(g => (
+              <option key={g} value={g}>{g}</option>
+            ))}
           </select>
         </label>
 
-        {clientError && <div className="warning-note">{clientError}</div>}
-        {serverMessage && <div className="warning-note">{serverMessage}</div>}
+        {clientError && <div className="warning-note" role="alert">{clientError}</div>}
+        {serverMessage && <div className="warning-note" role="status">{serverMessage}</div>}
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="submit" disabled={submitting} className="combo-toggle">
-            {submitting ? 'Отправка...' : 'Зарегистрироваться'}
+        <div className="auth-actions">
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
+            {submitting ? 'Отправка…' : 'Зарегистрироваться'}
           </button>
-          <button type="button" className="date-picker-btn" onClick={() => router.push('/')}>Отмена</button>
+          <button type="button" className="btn btn-ghost" onClick={() => router.push('/')}>
+            Отмена
+          </button>
         </div>
+
+        <p className="auth-switch">
+          Уже есть аккаунт? <Link href="/login">Войти</Link>
+        </p>
       </form>
-    </main>
+    </section>
   );
 }

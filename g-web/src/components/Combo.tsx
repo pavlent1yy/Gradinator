@@ -83,6 +83,7 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
     <div id="combo" className="combo combo--small" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls="combo-list" aria-labelledby="combo-label">
       <div className="combo-field" id="combo-label">
         <button
+          type="button"
           ref={toggleRef}
           className="combo-toggle"
           aria-label={label}
