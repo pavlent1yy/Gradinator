@@ -1,4 +1,4 @@
-package com.pavlent1yy.gcore.entity;
+package com.pavlent1yy.gcore.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
