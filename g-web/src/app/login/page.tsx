@@ -3,43 +3,33 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuthContext } from '../providers/AuthProvider';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, authLoading, authError, clearAuthError } = useAuthContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [clientMessage, setClientMessage] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setMessage(null);
+    setClientMessage(null);
+    clearAuthError();
 
     if (!email.trim() || !password) {
-      setMessage('Укажите email и пароль');
+      setClientMessage('Укажите email и пароль');
       return;
     }
 
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/core/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setMessage(data?.error ? data.error : `Ошибка: ${res.status}`);
-        return;
-      }
-      setMessage('Вход выполнен. Перенаправление…');
-      setTimeout(() => router.push('/'), 800);
-    } catch (err: any) {
-      setMessage(err?.message ?? String(err));
-    } finally {
-      setSubmitting(false);
+    const ok = await login(email, password);
+    if (ok) {
+      setClientMessage('Вход выполнен. Перенаправление…');
+      setTimeout(() => router.push('/'), 700);
     }
   }
+
+  const message = clientMessage ?? authError;
 
   return (
     <section className="auth-panel" aria-labelledby="login-title">
@@ -74,8 +64,8 @@ export default function LoginPage() {
         {message && <div className="warning-note" role="status">{message}</div>}
 
         <div className="auth-actions">
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'Вход…' : 'Войти'}
+          <button type="submit" className="btn btn-primary" disabled={authLoading}>
+            {authLoading ? 'Вход…' : 'Войти'}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => router.push('/')}>
             Отмена
