@@ -1,7 +1,7 @@
 package com.pavlent1yy.gcore.config;
 
 
-import com.pavlent1yy.gcore.service.JwtAuthenticationFilter;
+import com.pavlent1yy.gcore.service.jwt.JwtAuthenticationFilter;
 import com.pavlent1yy.gcore.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -42,6 +42,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/core/schedule/groups",
+                                "/core/schedule**",
                                 "/core/auth/login",
                                 "/core/auth/register",
                                 "/core/auth/refresh",

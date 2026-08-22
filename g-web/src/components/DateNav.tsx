@@ -1,16 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { formatDateShort } from '../lib/date';
+import { formatDateShort, toIsoDate } from '../lib/date';
 
 type Props = {
   dateIso: string;
   onPrev: () => void;
   onNext: () => void;
   onPick: (iso: string) => void;
+  onToday: () => void;
 };
 
-export default function DateNav({ dateIso, onPrev, onNext, onPick }: Props) {
+export default function DateNav({ dateIso, onPrev, onNext, onPick, onToday }: Props) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(dateIso);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -50,6 +51,8 @@ export default function DateNav({ dateIso, onPrev, onNext, onPick }: Props) {
     setOpen(false);
   }
 
+  const isToday = dateIso === toIsoDate(new Date());
+
   return (
     <div className="date-nav" role="group" aria-label="Переключение даты" ref={rootRef}>
       <button type="button" className="date-btn" aria-label="Предыдущий день" onClick={onPrev}>
@@ -78,6 +81,16 @@ export default function DateNav({ dateIso, onPrev, onNext, onPick }: Props) {
       <button type="button" className="date-btn" aria-label="Следующий день" onClick={onNext}>
         ›
       </button>
+
+      {!isToday && (
+        <button type="button" className="today-flag" onClick={onToday} aria-label="Вернуться к сегодняшней дате">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 9-9" />
+            <path d="M3 4v5h5" />
+          </svg>
+          <span>Сегодня</span>
+        </button>
+      )}
 
       {open && (
         <div className="date-picker-popover" role="dialog" aria-label="Выбор даты">

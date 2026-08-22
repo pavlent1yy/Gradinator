@@ -11,6 +11,8 @@ import com.pavlent1yy.gcore.entity.User;
 import com.pavlent1yy.gcore.enums.Role;
 import com.pavlent1yy.gcore.repository.RefreshSessionRepository;
 import com.pavlent1yy.gcore.repository.UserRepository;
+import com.pavlent1yy.gcore.service.jwt.JwtRefreshTokenService;
+import com.pavlent1yy.gcore.service.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,9 +29,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.Base64;
-import java.util.Objects;
-
-import static java.util.Objects.hash;
 
 @Service
 @Slf4j
@@ -45,7 +44,7 @@ public class AuthService {
     private final UserDetailsServiceImpl userDetailsService;
     private final RefreshSessionRepository refreshSessionRepository;
     private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
+    private final JwtRefreshTokenService refreshTokenService;
 
     public UserResponse register(RegisterRequest request){
 

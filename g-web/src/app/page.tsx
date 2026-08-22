@@ -45,7 +45,10 @@ export default function Page() {
           <div className="pair-num">{pair.pairNumber ?? '—'}</div>
           <div className="pair-body">
             <div className="entry">
-              <h3 className="subject">{joinList(slot?.subjects, 'Предмет')}</h3>
+              <h3 className="subject">
+                {joinList(slot?.subjects, 'Предмет')}
+                {pair.hasChanges && <span className="changed-stamp">замена</span>}
+              </h3>
               <div className="meta-row-lesson">
                 <span className="room mono">{joinList(slot?.rooms)}</span>
                 <span className="teachers">{joinList(slot?.teachers)}</span>

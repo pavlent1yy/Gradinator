@@ -1,4 +1,4 @@
-package com.pavlent1yy.gcore.service;
+package com.pavlent1yy.gcore.service.jwt;
 
 import com.pavlent1yy.gcore.customExceptions.InvalidRefreshTokenException;
 import com.pavlent1yy.gcore.entity.RefreshSession;
@@ -19,7 +19,7 @@ import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
-public class RefreshTokenService {
+public class JwtRefreshTokenService {
 
     private final RefreshSessionRepository refreshSessionRepository;
 

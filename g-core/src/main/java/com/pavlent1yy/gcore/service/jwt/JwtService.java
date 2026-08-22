@@ -1,4 +1,4 @@
-package com.pavlent1yy.gcore.service;
+package com.pavlent1yy.gcore.service.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

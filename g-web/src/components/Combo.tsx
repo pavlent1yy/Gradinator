@@ -7,11 +7,12 @@ type Props = {
   options: string[];
   value?: string;
   onChange: (v: string) => void;
+  homeGroup?: string | null;
 };
 
 const STORAGE_KEY = 'gradinator.selectedGroup';
 
-export default function Combo({ label = 'Выбрать', options, value, onChange }: Props) {
+export default function Combo({ label = 'Выбрать', options, value, onChange, homeGroup }: Props) {
   const [open, setOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const listRef = useRef<HTMLUListElement | null>(null);
@@ -43,6 +44,12 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
     }
   }, [open]);
 
+  function select(sel: string) {
+    onChange(sel);
+    try { localStorage.setItem(STORAGE_KEY, sel); } catch {}
+    setOpen(false);
+  }
+
   function onKeyDown(e: React.KeyboardEvent) {
     if (!open) {
       if (e.key === 'ArrowDown') {
@@ -60,10 +67,7 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (focusedIndex >= 0 && options[focusedIndex]) {
-        const sel = options[focusedIndex];
-        onChange(sel);
-        try { localStorage.setItem(STORAGE_KEY, sel); } catch {}
-        setOpen(false);
+        select(options[focusedIndex]);
       }
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -82,6 +86,7 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
   return (
     <div id="combo" className="combo combo--small" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls="combo-list" aria-labelledby="combo-label">
       <div className="combo-field" id="combo-label">
+        <span className="combo-tab">Группа</span>
         <button
           type="button"
           ref={toggleRef}
@@ -113,10 +118,11 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
             data-value={opt}
             aria-selected={opt === value}
             className={focusedIndex === idx ? 'focused' : undefined}
-            onClick={() => { onChange(opt); try { localStorage.setItem(STORAGE_KEY, opt); } catch {} setOpen(false); }}
+            onClick={() => select(opt)}
             onMouseEnter={() => setFocusedIndex(idx)}
           >
-            {opt}
+            <span>{opt}</span>
+            {homeGroup && opt === homeGroup && <span className="own-tag">моя</span>}
           </li>
         ))}
       </ul>
