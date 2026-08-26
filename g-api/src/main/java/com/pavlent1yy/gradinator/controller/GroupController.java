@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/groups")
@@ -14,8 +15,13 @@ public class GroupController {
 
     private final GroupService groupService;
 
-    @GetMapping
+    @GetMapping("")
     public List<String> getAllGroups() {
         return groupService.getAllGroups().stream().sorted().toList();
+    }
+
+    @GetMapping("/departments")
+    public Map<String, List<String>> getGroupsWithDepartments() {
+        return groupService.getGroupsWithDepartments();
     }
 }

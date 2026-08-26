@@ -22,8 +22,6 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.*;
 
-import static com.pavlent1yy.gradinator.service.GroupFileMap.getPossibleFileByGroupPrefix;
-
 @Slf4j
 @Service
 @AllArgsConstructor
@@ -31,9 +29,10 @@ public class ScheduleService {
 
     private final ExcelLayoutScanner scanner;
     private final StorageContext storageContext;
+    private final GroupFileMap groupFileMap;
 
     public List<GroupSchedule> getGroupSchedule(String group) {
-        String fileName = getPossibleFileByGroupPrefix(group);
+        String fileName =groupFileMap.getPossibleFileByGroupPrefix(group);
 
         Path file = storageContext.resolve(fileName);
 
@@ -97,7 +96,7 @@ public class ScheduleService {
 
         Set<String> groups = new HashSet<>();
 
-        for (String fileName : GroupFileMap.getAllFiles()) {
+        for (String fileName : groupFileMap.getAllFiles()) {
             collectGroupsFromFile(fileName, groups);
         }
 
@@ -125,7 +124,7 @@ public class ScheduleService {
     private void collectGroupsFromSheet(Sheet sheet, String fileName, Set<String> groupNames) {
         for (GroupSchedule gs : scanner.scan(sheet)) {
             String groupName = gs.getGroup();
-            if (GroupFileMap.getPossibleFileByGroupPrefix(groupName) == null) {
+            if (groupFileMap.getPossibleFileByGroupPrefix(groupName) == null) {
                 log.warn("🟠 Группа '{}' найдена в {}, но не сматчилась ни с одним префиксом в GroupFileMap — пропускаем",
                         groupName, fileName );
                 continue;

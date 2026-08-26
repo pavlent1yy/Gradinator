@@ -1,43 +1,165 @@
 package com.pavlent1yy.gradinator.service;
 
-import java.util.HashSet;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+@Component
 public class GroupFileMap {
 
-    private static final Map<String, String> GROUP_TO_FILE = Map.ofEntries(
-            Map.entry("ИС1", "oit_2sem.xlsx"),
-            Map.entry("СА1", "oit_2sem.xlsx"),
-            Map.entry("ИБ1", "oit_2sem.xlsx"),
+    private final Map<String, Set<String>> filePartToGroups;
+    private final Map<String, String> groupToFilePart;
+    private final Map<String, String> filePartToFile;
 
-            Map.entry("АР1", "oar_2sem.xlsx"),
-            Map.entry("ДИ1", "oar_2sem.xlsx"),
-            Map.entry("РК1", "oar_2sem.xlsx"),
-            Map.entry("ГД1", "oar_2sem.xlsx"),
-
-            Map.entry("ЮР1", "oep_2sem.xlsx"),
-            Map.entry("ЮС1", "oep_2sem.xlsx"),
-            Map.entry("ЮР2", "oep_2sem.xlsx"),
-            Map.entry("ТУ1", "oep_2sem.xlsx"),
-            Map.entry("ЭК1", "oep_2sem.xlsx"),
-
-            Map.entry("СТ1", "so_2sem.xlsx"),
-            Map.entry("СД2", "so_2sem.xlsx"),
-            Map.entry("МО2", "so_2sem.xlsx"),
-
-            Map.entry("МА1", "mmo_2sem.xlsx"),
-            Map.entry("ТТ1", "mmo_2sem.xlsx"),
-            Map.entry("МС1", "mmo_2sem.xlsx"),
-            Map.entry("УД1", "mmo_2sem.xlsx"),
-            Map.entry("ЗМ1", "mmo_2sem.xlsx")
-    );
-
-    public static String getPossibleFileByGroupPrefix(String group) {
-        return GROUP_TO_FILE.get(group.split("-")[0]);
+    public GroupFileMap(@Value("${api.storage-dir-path}") String storageDirPath,
+                        @Value("${api.groups-config-path:./groups.cfg}") String groupsConfigPath) {
+        this.filePartToGroups = loadGroups(Paths.get(groupsConfigPath));
+        this.groupToFilePart = createGroupToFilePart();
+        this.filePartToFile = findFiles(Paths.get(storageDirPath));
     }
 
-    public static Set<String> getAllFiles() {
-        return new HashSet<>(GROUP_TO_FILE.values());
+    public String getPossibleFileByGroupPrefix(String group) {
+        if (group == null || group.isBlank()) return null;
+
+        String groupPrefix = normalizeGroup(group.split("-", 2)[0]);
+        String filePart = groupToFilePart.get(groupPrefix);
+
+        return filePart == null ? null : filePartToFile.get(filePart);
+    }
+
+    public Set<String> getAllFiles() {
+        return new LinkedHashSet<>(filePartToFile.values());
+    }
+
+    public Map<String, List<String>> getGroupsByFilePart(List<String> allGroups) {
+        Map<String, List<String>> result = new LinkedHashMap<>();
+
+        for (String filePart : filePartToGroups.keySet()) {
+            Set<String> configuredPrefixes = filePartToGroups.get(filePart);
+
+            List<String> groups = allGroups.stream()
+                    .filter(group -> {
+                        String prefix = normalizeGroup(group.split("-", 2)[0]);
+                        return configuredPrefixes.contains(prefix);
+                    })
+                    .sorted()
+                    .toList();
+
+            result.put(filePart, groups);
+        }
+
+        return result;
+    }
+
+    private Map<String, Set<String>> loadGroups(Path config) {
+        if (!Files.exists(config))
+            throw new RuntimeException("Файл конфигурации не найден: " + config.toAbsolutePath());
+
+        Map<String, Set<String>> result = new LinkedHashMap<>();
+
+        try {
+            for (String line : Files.readAllLines(config)) {
+                line = line.trim();
+
+                if (line.isEmpty() || line.startsWith("#")) continue;
+
+                String[] parts = line.split(":", 2);
+                if (parts.length != 2)
+                    throw new RuntimeException("Некорректная строка в groups.cfg: " + line);
+
+                String filePart = normalizeFilePart(parts[0]);
+
+                Set<String> groups = Stream.of(parts[1].split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .map(GroupFileMap::normalizeGroup)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+                if (groups.isEmpty())
+                    throw new RuntimeException("Для отделения '" + filePart + "' не указаны группы");
+
+                if (result.put(filePart, groups) != null)
+                    throw new RuntimeException("Отделение '" + filePart + "' указано несколько раз");
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Ошибка чтения " + config.toAbsolutePath(), e);
+        }
+
+        if (result.isEmpty())
+            throw new RuntimeException("Файл groups.cfg не содержит ни одного отделения");
+
+        return Collections.unmodifiableMap(result);
+    }
+
+    private Map<String, String> createGroupToFilePart() {
+        Map<String, String> result = new HashMap<>();
+
+        filePartToGroups.forEach((filePart, groups) -> {
+            for (String group : groups) {
+                String previous = result.put(group, filePart);
+
+                if (previous != null)
+                    throw new RuntimeException("Группа '" + group + "' указана для '" + previous + "' и '" + filePart + "'");
+            }
+        });
+
+        return Collections.unmodifiableMap(result);
+    }
+
+    private Map<String, String> findFiles(Path storageDir) {
+        if (!Files.isDirectory(storageDir))
+            throw new RuntimeException("Директория с файлами не найдена: " + storageDir.toAbsolutePath());
+
+        Map<String, String> result = new LinkedHashMap<>();
+
+        try (Stream<Path> files = Files.list(storageDir)) {
+            files.filter(Files::isRegularFile)
+                    .map(path -> path.getFileName().toString())
+                    .forEach(fileName -> {
+                        String normalizedFileName = fileName.toLowerCase(Locale.ROOT);
+
+                        for (String filePart : filePartToGroups.keySet()) {
+                            if (!normalizedFileName.contains(filePart)) continue;
+
+                            String previous = result.put(filePart, fileName);
+
+                            if (previous != null)
+                                throw new RuntimeException("Найдено несколько файлов для '" + filePart + "': "
+                                        + previous + " и " + fileName);
+                            break;
+                        }
+                    });
+        } catch (IOException e) {
+            throw new RuntimeException("Ошибка при поиске файлов в " + storageDir.toAbsolutePath(), e);
+        }
+
+        for (String filePart : filePartToGroups.keySet()) {
+            if (!result.containsKey(filePart))
+                throw new RuntimeException("Файл, содержащий '" + filePart + "', не найден в " + storageDir.toAbsolutePath());
+        }
+
+        return Collections.unmodifiableMap(result);
+    }
+
+    private static String normalizeFilePart(String filePart) {
+        return filePart.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private static String normalizeGroup(String group) {
+        return group.trim().toUpperCase(Locale.ROOT);
     }
 }
