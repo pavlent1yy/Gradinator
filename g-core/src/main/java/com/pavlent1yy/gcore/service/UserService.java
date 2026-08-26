@@ -1,6 +1,7 @@
 package com.pavlent1yy.gcore.service;
 
 import com.pavlent1yy.gcore.customExceptions.PasswordIsIncorrect;
+import com.pavlent1yy.gcore.dto.records.ChangeGroupRequest;
 import com.pavlent1yy.gcore.dto.records.ChangePasswordRequest;
 import com.pavlent1yy.gcore.dto.records.UserResponse;
 import com.pavlent1yy.gcore.entity.User;
@@ -43,5 +44,11 @@ public class UserService {
         } else{
             throw new PasswordIsIncorrect("Password is incorrect!");
         }
+    }
+
+    public void changeGroup(String email, ChangeGroupRequest changeGroupRequest){
+        User user = getUserByEmail(email);
+        user.setGroup(changeGroupRequest.newGroup());
+        userRepository.save(user);
     }
 }
