@@ -41,13 +41,17 @@ async function readErrorMessage(res: Response, fallback: string): Promise<string
   return data?.error ? data.error : `${fallback}: ${res.status}`;
 }
 
+async function readLoginError(fallback: string): Promise<string> {
+	return `${fallback}`
+}
+
 export async function login(payload: LoginPayload): Promise<AuthTokens> {
   const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
-  if (!res.ok) throw new Error(await readErrorMessage(res, 'Не удалось войти'));
+  if (!res.ok) throw new Error(await readLoginError('Не удалось войти'));
   return res.json();
 }
 

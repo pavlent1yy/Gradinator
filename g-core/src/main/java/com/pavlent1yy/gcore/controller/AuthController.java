@@ -1,11 +1,15 @@
 package com.pavlent1yy.gcore.controller;
 
 import com.pavlent1yy.gcore.dto.*;
+import com.pavlent1yy.gcore.dto.records.LoginResponse;
+import com.pavlent1yy.gcore.dto.records.RefreshRequest;
+import com.pavlent1yy.gcore.dto.records.UserResponse;
 import com.pavlent1yy.gcore.service.AuthService;
 import com.pavlent1yy.gcore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 

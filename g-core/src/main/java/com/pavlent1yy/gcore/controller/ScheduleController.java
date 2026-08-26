@@ -1,6 +1,6 @@
 package com.pavlent1yy.gcore.controller;
 
-import com.pavlent1yy.gcore.dto.ScheduleResponse;
+import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
 import com.pavlent1yy.gcore.service.ScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -68,7 +68,7 @@ export default function RegisterPage() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setServerMessage(data?.error ? data.error : `Ошибка: ${res.status}`);
+        setServerMessage(data?.error ? data.error : `Ошибка регистрации`);
       } else {
         setServerMessage('Регистрация прошла успешно. Перенаправление на страницу входа…');
         setTimeout(() => router.push('/login'), 1200);

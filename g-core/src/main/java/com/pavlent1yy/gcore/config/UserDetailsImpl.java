@@ -1,4 +1,4 @@
-package com.pavlent1yy.gcore.client;
+package com.pavlent1yy.gcore.config;
 
 import com.pavlent1yy.gcore.entity.User;
 import lombok.Getter;

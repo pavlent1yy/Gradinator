@@ -1,7 +1,7 @@
 package com.pavlent1yy.gcore.client;
 
 import com.pavlent1yy.gcore.customExceptions.ScheduleNotFoundException;
-import com.pavlent1yy.gcore.dto.ScheduleResponse;
+import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;

@@ -1,7 +1,7 @@
 package com.pavlent1yy.gcore.service;
 
 import com.pavlent1yy.gcore.client.GApiClient;
-import com.pavlent1yy.gcore.dto.ScheduleResponse;
+import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

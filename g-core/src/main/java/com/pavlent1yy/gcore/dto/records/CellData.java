@@ -1,4 +1,4 @@
-package com.pavlent1yy.gcore.dto;
+package com.pavlent1yy.gcore.dto.records;
 
 import java.util.List;
 

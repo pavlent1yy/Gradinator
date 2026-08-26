@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(me);
       return true;
     } catch (e: any) {
-      setAuthError(e?.message ?? 'Не удалось войти');
+      setAuthError(e.message ?? 'Не удалось войти');
       return false;
     } finally {
       setAuthLoading(false);
