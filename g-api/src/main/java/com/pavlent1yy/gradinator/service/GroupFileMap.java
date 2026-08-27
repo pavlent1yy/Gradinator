@@ -7,14 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,6 +32,10 @@ public class GroupFileMap {
         String filePart = groupToFilePart.get(groupPrefix);
 
         return filePart == null ? null : departmentToFile.get(filePart);
+    }
+
+    public List<String> getDepartmentsNames() {
+        return new ArrayList<>(invertMap(departmentToFile).values());
     }
 
     public String getPossibleDepartmentByGroup(String group){

@@ -32,4 +32,9 @@ public class GroupController {
     public String getDepartmentByGroup(@RequestParam String group){
         return groupFileMap.getPossibleDepartmentByGroup(group.split("-")[0]);
     }
+
+    @GetMapping("/department-names")
+    public List<String> getDepartmentNames(){
+        return groupFileMap.getDepartmentsNames();
+    }
 }

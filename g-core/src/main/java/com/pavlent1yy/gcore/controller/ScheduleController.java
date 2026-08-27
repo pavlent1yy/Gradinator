@@ -38,4 +38,9 @@ public class ScheduleController {
     public String getDepartmentsByGroup(@RequestParam String group){
         return scheduleService.getDepartmentsByGroup(group);
     }
+
+    @GetMapping("/groups/department-names")
+    public List<String> getDepartmentNames(){
+        return scheduleService.getDepartmentNames();
+    }
 }

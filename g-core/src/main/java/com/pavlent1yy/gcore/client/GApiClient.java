@@ -65,4 +65,12 @@ public class GApiClient {
                 .body(new ParameterizedTypeReference<>() {});
     }
 
+    public List<String> getDepartmentNames(){
+        return gApiRestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/groups/department-names").build()
+                ).retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+    }
+
 }

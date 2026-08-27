@@ -30,4 +30,8 @@ public class ScheduleService {
     public String getDepartmentsByGroup(String group){
         return gApiClient.getDepartmentsByGroup(group);
     }
+
+    public List<String> getDepartmentNames(){
+        return gApiClient.getDepartmentNames();
+    }
 }
