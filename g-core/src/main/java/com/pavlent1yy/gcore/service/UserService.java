@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ScheduleService scheduleService;
     private final PasswordEncoder passwordEncoder;
 
     private User getUserByEmail(String email){
@@ -49,7 +50,9 @@ public class UserService {
 
     public void changeGroup(String email, ChangeGroupRequest changeGroupRequest){
         User user = getUserByEmail(email);
-        user.setGroup(changeGroupRequest.newGroup());
+        String newGroup = changeGroupRequest.newGroup();
+        user.setGroup(newGroup);
+        user.setDepartment(scheduleService.getDepartmentsByGroup(newGroup));
         userRepository.save(user);
     }
 
