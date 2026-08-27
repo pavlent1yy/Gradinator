@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,5 +21,13 @@ public class ScheduleService {
 
     public List<String> getAllGroups(){
         return gApiClient.getAllGroups();
+    }
+
+    public Map<String, List<String>> getGroupsWithDepartments(){
+        return gApiClient.getAllGroupsWithDepartments();
+    }
+
+    public String getDepartmentsByGroup(String group){
+        return gApiClient.getDepartmentsByGroup(group);
     }
 }

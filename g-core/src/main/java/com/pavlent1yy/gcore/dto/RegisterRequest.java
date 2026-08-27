@@ -20,4 +20,6 @@ public class RegisterRequest {
     private String confirmPassword;
 
     private String group;
+
+    private String department;
 }

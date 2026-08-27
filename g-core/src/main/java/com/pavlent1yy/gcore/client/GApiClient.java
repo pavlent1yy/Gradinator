@@ -9,6 +9,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -46,4 +47,22 @@ public class GApiClient {
                 ).retrieve()
                 .body(new ParameterizedTypeReference<>() {});
     }
+
+    public Map<String, List<String>> getAllGroupsWithDepartments(){
+        return gApiRestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/groups/departments").build()
+                ).retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+    }
+
+    public String getDepartmentsByGroup(String group){
+        return gApiRestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/groups/find-department")
+                        .queryParam("group", group).build()
+                ).retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+    }
+
 }

@@ -23,6 +23,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -43,6 +44,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final UserDetailsServiceImpl userDetailsService;
     private final RefreshSessionRepository refreshSessionRepository;
+    private final ScheduleService scheduleService;
     private final JwtService jwtService;
     private final JwtRefreshTokenService refreshTokenService;
 
@@ -59,7 +61,19 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.STUDENT);
-        user.setGroup(request.getGroup());
+
+        String group = request.getGroup();
+        String department = request.getDepartment();
+
+        if (isEmptyOrNull(group)) {
+            user.setDepartment(null);
+        } else if (!isEmptyOrNull(group) && isEmptyOrNull(department)) {
+            user.setDepartment(scheduleService.getDepartmentsByGroup(request.getGroup()));
+        } else {
+            user.setDepartment(department);
+        }
+
+        user.setGroup(group);
         user.setRegisteredAt(OffsetDateTime.now());
         user.setEnabled(false);
 
@@ -73,7 +87,7 @@ public class AuthService {
         userRepository.save(user);
 
         log.info("User registered: email={}, enabled={}", user.getEmail(), user.getEnabled());
-        return new UserResponse(user.getId(), user.getEmail(), user.getGroup(), user.getRole());
+        return new UserResponse(user.getId(), user.getEmail(), user.getGroup(), user.getDepartment(), user.getRole());
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -155,6 +169,10 @@ public class AuthService {
                 accessToken,
                 newRefreshToken
         );
+    }
+
+    private boolean isEmptyOrNull(String string){
+        return !StringUtils.hasLength(string);
     }
 
 

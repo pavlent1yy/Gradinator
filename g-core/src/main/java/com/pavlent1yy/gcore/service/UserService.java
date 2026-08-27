@@ -32,6 +32,7 @@ public class UserService {
                 user.getId(),
                 user.getEmail(),
                 user.getGroup(),
+                user.getDepartment(),
                 user.getRole()
         );
     }
@@ -50,5 +51,9 @@ public class UserService {
         User user = getUserByEmail(email);
         user.setGroup(changeGroupRequest.newGroup());
         userRepository.save(user);
+    }
+
+    public void defineDepartmentByGroup(String group){
+
     }
 }

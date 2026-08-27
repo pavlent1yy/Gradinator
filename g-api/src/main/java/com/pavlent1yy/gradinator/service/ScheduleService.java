@@ -32,7 +32,7 @@ public class ScheduleService {
     private final GroupFileMap groupFileMap;
 
     public List<GroupSchedule> getGroupSchedule(String group) {
-        String fileName =groupFileMap.getPossibleFileByGroupPrefix(group);
+        String fileName = groupFileMap.getPossibleFileNameByGroup(group);
 
         Path file = storageContext.resolve(fileName);
 
@@ -124,7 +124,7 @@ public class ScheduleService {
     private void collectGroupsFromSheet(Sheet sheet, String fileName, Set<String> groupNames) {
         for (GroupSchedule gs : scanner.scan(sheet)) {
             String groupName = gs.getGroup();
-            if (groupFileMap.getPossibleFileByGroupPrefix(groupName) == null) {
+            if (groupFileMap.getPossibleFileNameByGroup(groupName) == null) {
                 log.warn("🟠 Группа '{}' найдена в {}, но не сматчилась ни с одним префиксом в GroupFileMap — пропускаем",
                         groupName, fileName );
                 continue;

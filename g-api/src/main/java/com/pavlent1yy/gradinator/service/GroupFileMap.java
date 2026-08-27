@@ -23,31 +23,35 @@ public class GroupFileMap {
 
     private final Map<String, Set<String>> filePartToGroups;
     private final Map<String, String> groupToFilePart;
-    private final Map<String, String> filePartToFile;
+    private final Map<String, String> departmentToFile;
 
     public GroupFileMap(@Value("${api.storage-dir-path}") String storageDirPath,
                         @Value("${api.groups-config-path:./groups.cfg}") String groupsConfigPath) {
         this.filePartToGroups = loadGroups(Paths.get(groupsConfigPath));
         this.groupToFilePart = createGroupToFilePart();
-        this.filePartToFile = findFiles(Paths.get(storageDirPath));
+        this.departmentToFile = findFiles(Paths.get(storageDirPath));
     }
 
-    public String getPossibleFileByGroupPrefix(String group) {
+    public String getPossibleFileNameByGroup(String group) {
         if (group == null || group.isBlank()) return null;
 
         String groupPrefix = normalizeGroup(group.split("-", 2)[0]);
         String filePart = groupToFilePart.get(groupPrefix);
 
-        return filePart == null ? null : filePartToFile.get(filePart);
+        return filePart == null ? null : departmentToFile.get(filePart);
+    }
+
+    public String getPossibleDepartmentByGroup(String group){
+        Map<String, String> fileToDepartment = invertMap(departmentToFile);
+        return  fileToDepartment.get(getPossibleFileNameByGroup(group));
     }
 
     public Set<String> getAllFiles() {
-        return new LinkedHashSet<>(filePartToFile.values());
+        return new LinkedHashSet<>(departmentToFile.values());
     }
 
     public Map<String, List<String>> getGroupsByFilePart(List<String> allGroups) {
         Map<String, List<String>> result = new LinkedHashMap<>();
-
         for (String filePart : filePartToGroups.keySet()) {
             Set<String> configuredPrefixes = filePartToGroups.get(filePart);
 
@@ -161,5 +165,14 @@ public class GroupFileMap {
 
     private static String normalizeGroup(String group) {
         return group.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static <K, V> Map<V, K> invertMap(Map<K, V> sourceMap) {
+        Map<V, K> invertedMap = new LinkedHashMap<>();
+        for (Map.Entry<K, V> entry : sourceMap.entrySet()) {
+            invertedMap.put(entry.getValue(), entry.getKey());
+        }
+
+        return invertedMap;
     }
 }
