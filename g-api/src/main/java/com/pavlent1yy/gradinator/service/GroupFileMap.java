@@ -19,7 +19,7 @@ public class GroupFileMap {
     private final Map<String, String> departmentToFile;
 
     public GroupFileMap(@Value("${api.storage-dir-path}") String storageDirPath,
-                        @Value("${api.groups-config-path:./groups.cfg}") String groupsConfigPath) {
+                        @Value("${api.groups-config-path}") String groupsConfigPath) {
         this.filePartToGroups = loadGroups(Paths.get(groupsConfigPath));
         this.groupToFilePart = createGroupToFilePart();
         this.departmentToFile = findFiles(Paths.get(storageDirPath));
@@ -28,10 +28,24 @@ public class GroupFileMap {
     public String getPossibleFileNameByGroup(String group) {
         if (group == null || group.isBlank()) return null;
 
-        String groupPrefix = normalizeGroup(group.split("-", 2)[0]);
-        String filePart = groupToFilePart.get(groupPrefix);
+        String prefix = extractPrefix(group);
+        String filePart = groupToFilePart.get(prefix);
 
         return filePart == null ? null : departmentToFile.get(filePart);
+    }
+
+    private static String extractPrefix(String group) {
+        String normalized = normalizeGroup(group.trim());
+
+        if (normalized.contains("-")) {
+            return normalized.split("-", 2)[0]; // стандартный формат
+        }
+
+        for (String part : normalized.split("\\s+")) {
+            if (part.matches("[А-ЯЁ]+")) return part; // реверснутый формат
+        }
+
+        return normalized;
     }
 
     public List<String> getDepartmentsNames() {

@@ -1,4 +1,4 @@
-package com.pavlent1yy.gradinator.parser;
+package com.pavlent1yy.gradinator.service.parser;
 
 import com.pavlent1yy.gradinator.config.StorageContext;
 import com.pavlent1yy.gradinator.model.GroupSchedule;

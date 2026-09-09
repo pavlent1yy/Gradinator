@@ -4,7 +4,7 @@ import com.pavlent1yy.gradinator.config.StorageContext;
 import com.pavlent1yy.gradinator.model.DaySchedule;
 import com.pavlent1yy.gradinator.model.GroupSchedule;
 import com.pavlent1yy.gradinator.model.PairSlot;
-import com.pavlent1yy.gradinator.parser.ExcelLayoutScanner;
+import com.pavlent1yy.gradinator.service.parser.ExcelLayoutScanner;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,11 +55,19 @@ public class ScheduleService {
     }
 
     public GroupSchedule getWeek(String group) {
-        return getGroupSchedule(group)
-                .stream()
+        List<GroupSchedule> all = getGroupSchedule(group);
+
+        return all.stream()
                 .filter(g -> g.getGroup().equals(group))
                 .findFirst()
-                .orElseThrow();
+                .orElseGet(() -> {
+                    log.error("⭕ Группа '{}' (codepoints: {}) не найдена среди {} распарсенных: {}",
+                            group,
+                            group.chars().boxed().toList(),
+                            all.size(),
+                            all.stream().map(g -> g.getGroup() + " " + g.getGroup().chars().boxed().toList()).toList());
+                    throw new NoSuchElementException("Группа не найдена: " + group);
+                });
     }
 
     public DaySchedule getScheduleForDate(
@@ -107,9 +115,9 @@ public class ScheduleService {
 
     private void collectGroupsFromFile(String fileName, Set<String> groups) {
         log.debug("🐜 Обрабатываем файл '{}'", fileName);
-        Path file = Path.of(storageContext.getStorageDirPath(), fileName);
+        Path pathToFile = Path.of(storageContext.getStorageDirPath(), fileName);
 
-        try (InputStream is = Files.newInputStream(file)) {
+        try (InputStream is = Files.newInputStream(pathToFile)) {
             try (Workbook wb = new XSSFWorkbook(is)) {
                 for (int i = 0; i < wb.getNumberOfSheets(); i++) {
                     collectGroupsFromSheet(wb.getSheetAt(i), fileName, groups);
