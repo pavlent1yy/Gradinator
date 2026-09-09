@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class RateLimitProperties {
 
     private Limit schedule = new Limit();
+    private Limit scheduleAll = new Limit();
     private Limit user = new Limit();
     private Limit admin = new Limit();
 

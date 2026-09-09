@@ -44,24 +44,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 .build();
     }
 
-    private RateLimitProperties.Limit getLimit(HttpServletRequest request) {
-        String path = request.getRequestURI();
-
-        if (path.startsWith("/api/schedule/")) {
-            return properties.getSchedule();
-        }
-
-        if (path.startsWith("/api/admin/")) {
-            return properties.getAdmin();
-        }
-
-        if (path.startsWith("/api/user/")) {
-            return properties.getUser();
-        }
-
-        return properties.getSchedule();
-    }
-
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -102,22 +84,57 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private String getCategory(HttpServletRequest request) {
         String path = request.getRequestURI();
 
-        if (path.startsWith("/api/schedule/")) {
+        if (isPath(path, "/api/schedule")) {
+            if (isScheduleAllRequest(request)) {
+                return "schedule-all";
+            }
+
             return "schedule";
         }
 
-        if (path.startsWith("/api/admin/")) {
+        if (isPath(path, "/api/admin")) {
             return "admin";
         }
 
-        if (path.startsWith("/api/user/")) {
+        if (isPath(path, "/api/user")) {
             return "user";
         }
 
         return "other";
     }
 
+    private RateLimitProperties.Limit getLimit(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        if (isPath(path, "/api/schedule")) {
+            if (isScheduleAllRequest(request)) {
+                return properties.getScheduleAll();
+            }
+
+            return properties.getSchedule();
+        }
+
+        if (isPath(path, "/api/admin")) {
+            return properties.getAdmin();
+        }
+
+        if (isPath(path, "/api/user")) {
+            return properties.getUser();
+        }
+
+        return properties.getSchedule();
+    }
+
     private String getClientIp(HttpServletRequest request) {
         return request.getRemoteAddr();
+    }
+
+    private boolean isScheduleAllRequest(HttpServletRequest request) {
+        return "/api/schedule".equals(request.getRequestURI())
+                && !request.getParameterMap().containsKey("group");
+    }
+    
+    private boolean isPath(String path, String base) {
+        return path.equals(base) || path.startsWith(base + "/");
     }
 }
