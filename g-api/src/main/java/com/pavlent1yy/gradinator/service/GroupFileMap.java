@@ -65,18 +65,14 @@ public class GroupFileMap {
         Map<String, List<String>> result = new LinkedHashMap<>();
         for (String filePart : filePartToGroups.keySet()) {
             Set<String> configuredPrefixes = filePartToGroups.get(filePart);
-
             List<String> groups = allGroups.stream()
                     .filter(group -> {
-                        String prefix = normalizeGroup(group.split("-", 2)[0]);
+                        String prefix = extractPrefix(group);
                         return configuredPrefixes.contains(prefix);
                     })
-                    .sorted()
-                    .toList();
-
+                    .sorted() .toList();
             result.put(filePart, groups);
         }
-
         return result;
     }
 
