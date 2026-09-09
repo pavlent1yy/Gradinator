@@ -31,9 +31,13 @@ public class HeartbeatController {
     }
 
     @GetMapping("/logs")
-    public List<HeartbeatLog> getLogs(@RequestParam(defaultValue = "20") int limit) {
+    public List<HeartbeatLog> getLogs(
+            @RequestParam(defaultValue = "20") int limit) {
+        limit = Math.min(Math.max(limit, 1), 100);
+
         return heartbeatLogRepository
-                .findAll(PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "id")))
+                .findAll(PageRequest.of(0, limit,
+                        Sort.by(Sort.Direction.DESC, "id")))
                 .getContent();
     }
 

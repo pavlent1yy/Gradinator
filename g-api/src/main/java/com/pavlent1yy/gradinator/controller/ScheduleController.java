@@ -19,18 +19,35 @@ public class ScheduleController {
 
     private final QueryService queryService;
     private final WeekService weekService;
+    private static final int MAX_GROUP_LENGTH = 30;
+    private static final long HISTORY_DAYS = 90;
+    private static final long FUTURE_DAYS = 30;
 
     @GetMapping
     public ResponseEntity<?> getSchedule(
             @RequestParam(required = false) String group,
-            @RequestParam(required = false) String date
-    ) {
+            @RequestParam(required = false) String date) {
         LocalDate target;
         try {
-            target = date == null ? LocalDate.now() : resolveDate(date);
+            target = date == null
+                    ? LocalDate.now()
+                    : resolveDate(date);
         } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Некорректная дата, ожидается yyyy-MM-dd"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "error",
+                            "Некорректная дата, ожидается yyyy-MM-dd"
+                    ));
         }
+
+        if (!isDateAllowed(target)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "error",
+                            "Дата находится вне допустимого диапазона"
+                    ));
+        }
+
         return respondForDate(group, target);
     }
 
@@ -59,17 +76,39 @@ public class ScheduleController {
 
     private ResponseEntity<?> respondForDate(String group, LocalDate date) {
         if (group == null || group.isBlank()) {
-            Map<String, DayScheduleResponse> all = queryService.getScheduleForAllGroups(date);
+            Map<String, DayScheduleResponse> all =
+                    queryService.getScheduleForAllGroups(date);
+
             if (all.isEmpty()) {
-                return ResponseEntity.status(404).body(Map.of("error", "Снапшот на дату " + date + " ещё не посчитан"));
+                return ResponseEntity.status(404)
+                        .body(Map.of(
+                                "error",
+                                "Снапшот на дату " + date + " ещё не посчитан"
+                        ));
             }
+
             return ResponseEntity.ok(all);
         }
 
-        return queryService.getScheduleForGroup(group, date)
+        String trimmedGroup = group.trim();
+
+        if (trimmedGroup.length() > MAX_GROUP_LENGTH) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of(
+                            "error",
+                            "Некорректное название группы"
+                    ));
+        }
+
+        return queryService.getScheduleForGroup(trimmedGroup, date)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(404)
-                        .body(Map.of("error", "Нет актуальных данных для группы '" + group + "' на " + date)));
+                        .body(Map.of(
+                                "error",
+                                "Нет актуальных данных для группы '" +
+                                        trimmedGroup +
+                                        "' на " + date
+                        )));
     }
 
     private LocalDate resolveDate(String date) {
@@ -79,5 +118,12 @@ public class ScheduleController {
             case "yesterday" -> LocalDate.now().minusDays(1);
             default -> LocalDate.parse(date);
         };
+    }
+
+    private boolean isDateAllowed(LocalDate date) {
+        LocalDate now = LocalDate.now();
+
+        return !date.isBefore(now.minusDays(HISTORY_DAYS))
+                && !date.isAfter(now.plusDays(FUTURE_DAYS));
     }
 }
