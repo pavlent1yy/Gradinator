@@ -35,6 +35,9 @@ public class ExcelLayoutScanner {
     private static final Pattern GROUP_TOKEN =
             Pattern.compile("^[А-ЯЁA-Z]{1,3}\\s?\\d+-\\d{2}");
 
+    private static final Pattern REVERSED_GROUP_TOKEN =
+            Pattern.compile("^\\d{1,3}\\s+[А-ЯЁ]{2,6}$");
+
     private RowType classify(Row row) {
         String c0 = cellString(row, COL_NUMBER);
 
@@ -51,10 +54,11 @@ public class ExcelLayoutScanner {
 
         String firstToken = c0.split("[/\\\\]")[0].trim();
         if (GROUP_TOKEN.matcher(firstToken).find()) return RowType.GROUP;
+        if (REVERSED_GROUP_TOKEN.matcher(firstToken).matches()) return RowType.GROUP;
 
         if (c0.matches("^\\d+$")) return RowType.PAIR;
 
-        log.debug("🐜Unclassified row, c0='{}' — skipping", c0);
+        log.debug("Unclassified row, c0='{}' — skipping", c0);
         return RowType.EMPTY;
     }
 
@@ -126,9 +130,14 @@ public class ExcelLayoutScanner {
 
     private String extractGroup(Row row) {
         String raw = cellString(row, COL_NUMBER);
-        Matcher m = GROUP_TOKEN.matcher(raw);
-        String group = m.find() ? m.group().trim() : raw.trim();
-        return group.replaceAll("\\s+", "");
+
+        Matcher standard = GROUP_TOKEN.matcher(raw);
+        if (standard.find()) return standard.group().trim().replaceAll("\\s+", "");
+
+        Matcher reversed = REVERSED_GROUP_TOKEN.matcher(raw.trim());
+        if (reversed.matches()) return raw.trim();
+
+        return raw.trim().replaceAll("\\s+", "");
     }
 
 
