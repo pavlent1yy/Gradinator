@@ -9,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -18,6 +19,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
@@ -71,6 +73,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
         );
 
         response.setStatus(TOO_MANY_REQUESTS);
+        log.warn(
+                "🚨 Rate limit exceeded: ip={}, method={}, uri={}, category={}",
+                getClientIp(request),
+                request.getMethod(),
+                request.getRequestURI(),
+                getCategory(request)
+        );
         response.setHeader("Retry-After", String.valueOf(waitSeconds));
         response.setContentType("application/json");
         response.getWriter().write("""
@@ -133,7 +142,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         return "/api/schedule".equals(request.getRequestURI())
                 && !request.getParameterMap().containsKey("group");
     }
-    
+
     private boolean isPath(String path, String base) {
         return path.equals(base) || path.startsWith(base + "/");
     }

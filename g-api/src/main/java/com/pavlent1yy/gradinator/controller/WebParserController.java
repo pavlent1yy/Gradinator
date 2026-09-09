@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/api/parser")
+@RequestMapping("/api/admin/parser")
 @RequiredArgsConstructor
 public class WebParserController {
     private final WebParserService parserService;
