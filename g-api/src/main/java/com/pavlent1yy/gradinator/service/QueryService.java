@@ -8,6 +8,7 @@ import com.pavlent1yy.gradinator.model.CellData;
 import com.pavlent1yy.gradinator.repository.ScheduleEntryRepository;
 import com.pavlent1yy.gradinator.repository.ScheduleSnapshotRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,10 @@ public class QueryService {
     private final ScheduleEntryRepository entryRepository;
     private final WeekService weekService;
 
+    @Cacheable(
+            value = "schedule",
+            key = "#group + ':' + #date"
+    )
     @Transactional(readOnly = true)
     public Optional<DayScheduleResponse> getScheduleForGroup(String group, LocalDate date) {
         Optional<ScheduleSnapshot> snapshot = snapshotRepository.findByScheduleDate(date);

@@ -8,6 +8,8 @@ import com.pavlent1yy.gradinator.repository.ScheduleSnapshotRepository;
 import com.pavlent1yy.gradinator.enums.SnapshotBuiltStatus;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,40 +26,81 @@ public class SnapshotBuildService {
     private final SnapshotMapper snapshotMapper;
     private final ScheduleSnapshotRepository snapshotRepository;
     private final ScheduleEntryRepository entryRepository;
+    private final CacheManager cacheManager;
 
     @Transactional
-    public SnapshotBuiltStatus buildAndSave(LocalDate date, List<String> groups, Map<String, List<PairSlot>> changesByGroup) {
+    public SnapshotBuiltStatus buildAndSave(
+            LocalDate date,
+            List<String> groups,
+            Map<String, List<PairSlot>> changesByGroup
+    ) {
         Map<String, DaySchedule> byGroup = new HashMap<>();
         Map<String, Set<Integer>> changedPairsByGroup = new HashMap<>();
 
         for (String g : groups) {
             try {
                 List<PairSlot> changes = changesByGroup.getOrDefault(g, List.of());
-                changedPairsByGroup.put(g, changes.stream().map(PairSlot::getPairNumber).collect(Collectors.toSet()));
-                byGroup.put(g, scheduleService.getScheduleForDate(g, date, changes));
+
+                changedPairsByGroup.put(
+                        g,
+                        changes.stream()
+                                .map(PairSlot::getPairNumber)
+                                .collect(Collectors.toSet())
+                );
+
+                byGroup.put(
+                        g,
+                        scheduleService.getScheduleForDate(g, date, changes)
+                );
+
             } catch (Exception e) {
-                log.error("⭕Не удалось построить расписание для группы {}, пропускаю", g, e);
+                log.error(
+                        "⭕Не удалось построить расписание для группы {}, пропускаю",
+                        g,
+                        e
+                );
             }
         }
 
         String newHash = snapshotMapper.computeHash(byGroup);
-        Optional<ScheduleSnapshot> existing = snapshotRepository.findByScheduleDate(date);
+        Optional<ScheduleSnapshot> existing =
+                snapshotRepository.findByScheduleDate(date);
 
         if (existing.isPresent() && existing.get().getHash().equals(newHash)) {
             return SnapshotBuiltStatus.NO_CHANGES;
         }
 
-        SnapshotBuiltStatus status = existing.isPresent() ? SnapshotBuiltStatus.UPDATED : SnapshotBuiltStatus.CREATED;
+        SnapshotBuiltStatus status = existing.isPresent()
+                ? SnapshotBuiltStatus.UPDATED
+                : SnapshotBuiltStatus.CREATED;
 
-        ScheduleSnapshot snapshot = existing.orElseGet(() -> ScheduleSnapshot.builder().scheduleDate(date).build());
+        ScheduleSnapshot snapshot = existing
+                .orElseGet(() -> ScheduleSnapshot.builder()
+                        .scheduleDate(date)
+                        .build());
+
         snapshot.setHash(newHash);
         snapshot = snapshotRepository.save(snapshot);
 
         if (existing.isPresent()) {
             entryRepository.deleteBySnapshot_Id(snapshot.getId());
         }
-        entryRepository.saveAll(snapshotMapper.toEntries(snapshot, byGroup, changedPairsByGroup));
+
+        entryRepository.saveAll(
+                snapshotMapper.toEntries(
+                        snapshot,
+                        byGroup,
+                        changedPairsByGroup
+                )
+        );
+
+        evictScheduleCache();
 
         return status;
+    }
+
+    private void evictScheduleCache() {
+        cacheManager.getCache("schedule").clear();
+        cacheManager.getCache("scheduleAll").clear();
     }
 }
