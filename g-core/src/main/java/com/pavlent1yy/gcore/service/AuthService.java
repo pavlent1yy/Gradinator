@@ -16,6 +16,7 @@ import com.pavlent1yy.gcore.service.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,6 +29,7 @@ import org.springframework.util.StringUtils;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 
@@ -169,6 +171,26 @@ public class AuthService {
                 accessToken,
                 newRefreshToken
         );
+    }
+
+    public ResponseCookie createRefreshCookie(String token) {
+        return ResponseCookie.from("gradinator_refresh", token)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofDays(30))
+                .build();
+    }
+
+    public ResponseCookie deleteRefreshCookie() {
+        return ResponseCookie.from("gradinator_refresh", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
     }
 
     private boolean isEmptyOrNull(String string){

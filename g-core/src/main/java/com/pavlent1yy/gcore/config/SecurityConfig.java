@@ -42,8 +42,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/core/schedule/groups/**",
-                                "/core/schedule**",
+                                "/core/schedule",
+                                "/core/schedule/**",
                                 "/core/auth/login",
                                 "/core/auth/register",
                                 "/core/auth/refresh",

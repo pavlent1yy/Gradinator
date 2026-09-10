@@ -8,10 +8,14 @@ import com.pavlent1yy.gcore.service.AuthService;
 import com.pavlent1yy.gcore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,18 +31,36 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponse login(
+    public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
-        return authService.login(request);
+        LoginResponse response = authService.login(request);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        authService.createRefreshCookie(response.refreshToken()).toString()
+                )
+                .body(new LoginResponse(
+                        response.accessToken(),
+                        null
+                ));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
-            @RequestBody RefreshRequest request
-    ) {
-        authService.logout(request.refreshToken());
-        return ResponseEntity.noContent().build();
+            @CookieValue(value = "gradinator_refresh", required = false)
+            String refreshToken) {
+        if (refreshToken != null) {
+            authService.logout(refreshToken);
+        }
+
+        return ResponseEntity.noContent()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        authService.deleteRefreshCookie().toString()
+                )
+                .build();
     }
 
 
@@ -48,10 +70,20 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public LoginResponse refresh(
-            @Valid @RequestBody RefreshRequest request
+    public ResponseEntity<LoginResponse> refresh(
+            @CookieValue("gradinator_refresh") String refreshToken
     ) {
-        return authService.refresh(request.refreshToken());
+        LoginResponse response = authService.refresh(refreshToken);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        authService.createRefreshCookie(response.refreshToken()).toString()
+                )
+                .body(new LoginResponse(
+                        response.accessToken(),
+                        null
+                ));
     }
 
 
