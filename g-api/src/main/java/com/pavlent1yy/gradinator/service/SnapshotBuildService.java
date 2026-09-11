@@ -103,4 +103,8 @@ public class SnapshotBuildService {
         cacheManager.getCache("schedule").clear();
         cacheManager.getCache("scheduleAll").clear();
     }
+
+    public boolean existsForDate(LocalDate date) {
+        return snapshotRepository.findByScheduleDate(date).isPresent();
+    }
 }

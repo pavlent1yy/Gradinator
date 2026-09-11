@@ -3,6 +3,7 @@ package com.pavlent1yy.gradinator.service;
 import com.pavlent1yy.gradinator.entity.Group;
 import com.pavlent1yy.gradinator.entity.HeartbeatLog;
 
+import com.pavlent1yy.gradinator.enums.SnapshotBuiltStatus;
 import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.repository.HeartbeatLogRepository;
 import com.pavlent1yy.gradinator.service.parser.ExcelFileSyncService;
@@ -56,15 +57,24 @@ public class HeartbeatService {
                     .map(Group::getName)
                     .toList();
 
-            Map<String, List<PairSlot>> todaysChanges = changesDate != null && changesDate.equals(today)
-                    ? allChanges.byGroup() : Map.of();
+            boolean changesCoverToday = changesDate != null && changesDate.equals(today);
+            Map<String, List<PairSlot>> todaysChanges = changesCoverToday
+                    ? allChanges.byGroup()
+                    : Map.of();
 
-            var todayStatus = snapshotBuildService.buildAndSave(today, groups, todaysChanges);
+            SnapshotBuiltStatus todayStatus;
+            if (!changesCoverToday && snapshotBuildService.existsForDate(today)) {
+                todayStatus = SnapshotBuiltStatus.NO_CHANGES;
+                log.debug("🐜 Снапшот на {} уже есть, замены. Пропускаю пересчёт", today);
+            } else {
+                todayStatus = snapshotBuildService.buildAndSave(today, groups, todaysChanges);
+            }
+
             message.append("""
-                    Status: %s
-                    Groups: %d
-                    Snapshot: %s
-                    """.formatted(todayStatus, groups.size(), today));
+                Status: %s
+                Groups: %d
+                Snapshot: %s
+                """.formatted(todayStatus, groups.size(), today));
 
             if (changesDate != null && changesDate.isAfter(today)) {
                 var aheadStatus = snapshotBuildService.buildAndSave(changesDate, groups, allChanges.byGroup());
