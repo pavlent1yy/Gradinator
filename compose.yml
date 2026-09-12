@@ -1,0 +1,80 @@
+services:
+
+  postgres:
+    image: postgres:18
+    container_name: gradinator-postgres
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      TZ: Europe/Moscow
+      PGTZ: Europe/Moscow
+
+    volumes:
+      - ./postgres:/var/lib/postgresql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  g-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: g-api
+
+    container_name: gradinator-g-api
+    restart: unless-stopped
+
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Europe/Moscow
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Europe/Moscow"
+
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - ./scheduleFiles:/app/g-api/scheduleFiles
+      - ./groups.cfg:/app/groups.cfg
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
+  g-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: g-core
+
+    container_name: gradinator-g-core
+    restart: unless-stopped
+
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: Europe/Moscow
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Europe/Moscow"
+
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+      g-api:
+        condition: service_started
