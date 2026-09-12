@@ -44,6 +44,9 @@ services:
       - ./scheduleFiles:/app/g-api/scheduleFiles
       - ./groups.cfg:/app/groups.cfg
 
+    ports:
+      - "9090:9090"
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,9 +75,33 @@ services:
       JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
 
+    ports:
+      - "9091:9091"
+
     depends_on:
       postgres:
         condition: service_healthy
 
       g-api:
+        condition: service_started
+
+
+  g-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+
+    container_name: gradinator-g-web
+    restart: unless-stopped
+
+    environment:
+      TZ: Europe/Moscow
+      NODE_ENV: production
+      G_CORE_URL: http://g-core:9091
+
+    ports:
+      - "3042:3042"
+
+    depends_on:
+      g-core:
         condition: service_started
