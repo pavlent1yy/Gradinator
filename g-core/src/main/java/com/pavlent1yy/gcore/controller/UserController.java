@@ -4,7 +4,6 @@ import com.pavlent1yy.gcore.dto.records.ChangeGroupRequest;
 import com.pavlent1yy.gcore.dto.records.ChangePasswordRequest;
 import com.pavlent1yy.gcore.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PutMapping;

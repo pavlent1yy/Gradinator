@@ -2,6 +2,26 @@ import type { Schedule } from '../types/schedule';
 
 const API_BASE = '/api/core';
 
+
+export async function changeGroup(newGroup: string): Promise<void> {
+    const accessToken = getAccessToken();
+
+    const res = await fetch(`${API_BASE}/user/change-group`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+            newGroup
+        })
+    });
+
+    if (!res.ok) {
+        throw new Error('Не удалось изменить группу');
+    }
+}
+
 export async function fetchGroups(): Promise<string[]> {
     const res = await fetch(`${API_BASE}/schedule/groups`);
 
