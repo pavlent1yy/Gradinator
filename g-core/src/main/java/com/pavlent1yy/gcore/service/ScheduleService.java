@@ -1,0 +1,37 @@
+package com.pavlent1yy.gcore.service;
+
+import com.pavlent1yy.gcore.client.GApiClient;
+import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class ScheduleService {
+
+    private final GApiClient gApiClient;
+
+    public ScheduleResponse getSchedule(String group, LocalDate date) {
+        return gApiClient.getSchedule(group, date);
+    }
+
+    public List<String> getAllGroups(){
+        return gApiClient.getAllGroups();
+    }
+
+    public Map<String, List<String>> getGroupsWithDepartments(){
+        return gApiClient.getAllGroupsWithDepartments();
+    }
+
+    public String getDepartmentsByGroup(String group){
+        return gApiClient.getDepartmentsByGroup(group);
+    }
+
+    public List<String> getDepartmentNames(){
+        return gApiClient.getDepartmentNames();
+    }
+}

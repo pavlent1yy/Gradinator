@@ -1,0 +1,16 @@
+.git
+.gitignore
+.idea
+.vscode
+
+**/target
+g-web/node_modules
+g-web/.next
+
+*.iml
+
+g-api/scheduleFiles
+private-info.properties
+**/private-info.properties
+
+.env

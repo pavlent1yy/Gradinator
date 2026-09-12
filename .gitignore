@@ -1,14 +1,13 @@
-# Maven/Gradle
+# Maven / Gradle
 target/
 build/
+.gradle/
 !.mvn/wrapper/maven-wrapper.jar
 
-
-src/main/resources/private-info.properties
-
+# Private configuration
+**/src/main/resources/private-info.properties
 
 # IDE
-# IntelliJ IDEA
 .idea/
 *.iml
 *.iws
@@ -30,12 +29,12 @@ out/
 # VS Code
 .vscode/
 
-# Логи и временные файлы
+# Logs and temporary files
 *.log
 *.tmp
 *.bak
 *.swp
-.DS_Store
 
-# OS файлы
+# OS
+.DS_Store
 Thumbs.db
