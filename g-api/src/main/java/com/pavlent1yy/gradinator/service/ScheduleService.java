@@ -56,6 +56,13 @@ public class ScheduleService {
 
     public GroupSchedule getWeek(String group) {
         List<GroupSchedule> all = getGroupSchedule(group);
+        all.stream()
+                .filter(g -> g.getDays().size() != 6)
+                .forEach(g -> log.warn(
+                        "🟠 Для группы '{}' распарсено {} дней вместо 6 — расписание может быть неполным",
+                        g.getGroup(),
+                        g.getDays().size()
+                ));
 
         return all.stream()
                 .filter(g -> g.getGroup().equals(group))
@@ -65,7 +72,9 @@ public class ScheduleService {
                             group,
                             group.chars().boxed().toList(),
                             all.size(),
-                            all.stream().map(g -> g.getGroup() + " " + g.getGroup().chars().boxed().toList()).toList());
+                            all.stream()
+                                    .map(g -> g.getGroup() + " " + g.getGroup().chars().boxed().toList())
+                                    .toList());
                     throw new NoSuchElementException("Группа не найдена: " + group);
                 });
     }

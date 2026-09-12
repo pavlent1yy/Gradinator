@@ -47,7 +47,7 @@ public class HeartbeatService {
         StringBuilder message = new StringBuilder();
 
         try {
-            excelFileSyncService.syncAll();
+//            excelFileSyncService.syncAll();
 
             var allChanges = parserService.getAllChanges();
             LocalDate today = LocalDate.now();
