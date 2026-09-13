@@ -90,6 +90,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      args:
+        G_CORE_URL: http://g-core:9091
 
     container_name: gradinator-g-web
     restart: unless-stopped
