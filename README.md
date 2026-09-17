@@ -242,3 +242,14 @@ JWT_REFRESH_EXPIRATION=2592000000 //= 30 дней
 Gradinator находится в активной разработке. Запущена демка
 
 Архитектура и отдельные API могут изменяться по мере развития проекта.
+
+## License
+
+Gradinator is distributed under a custom source-available license.
+
+The source code may be viewed, studied, modified, and distributed under the terms of the license.
+
+Running, deploying, hosting, or operating the Project requires explicit permission from the copyright holder.
+
+See [`LICENSE.md`](./LICENSE.md) for the full license text.
+
