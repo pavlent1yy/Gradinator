@@ -19,6 +19,7 @@ Gradinator — информационная система для работы �
 - хранение истории снапшотов
 - управление пользователями
 - аутентификацию и авторизацию
+- подтверждение адреса электронной почты при регистрации
 
 ## Архитектура
 
@@ -206,7 +207,7 @@ Backend-сервис расписания на Spring Boot.
 
 Для локальной разработки компоненты могут запускаться независимо друг от друга.
 
-Для запуска production-окружения используется Docker Compose:
+Для локального запуска используется Docker Compose:
 
 ```bash
 docker compose up -d
@@ -217,17 +218,27 @@ docker compose up -d
 
 Внутреннее взаимодействие сервисов происходит через Docker network.
 
-# Но прежде нужно создать .env файл, заполнить инфу и указать время JWT в миллисекундах:
-Для запуска production-окружения необходимо создать `.env` на основе
-`.env.example`:
+Для развёртывания за Nginx используется `compose.prod.yml`. Скопируйте
+`.env.example` в `.env`, задайте секреты и SMTP-параметры, затем выполните:
+
+```bash
+./deploy/bootstrap.sh
+sudo CERTBOT_EMAIL=admin@example.com ./deploy/install-nginx-and-tls.sh
+```
+
+При включённом `EMAIL_VERIFICATION_ENABLED` новые пользователи получают письмо
+со ссылкой, действующей в течение `EMAIL_VERIFICATION_TOKEN_TTL`.
+
+Перед любым запуском необходимо создать `.env` на основе `.env.example`:
 
 ```bash
 cp .env.example .env
 ```
-и 
-```
-JWT_ACCESS_EXPIRATION=900000 //= 15 минут
-JWT_REFRESH_EXPIRATION=2592000000 //= 30 дней
+Значения времени жизни JWT указываются в миллисекундах:
+
+```dotenv
+JWT_ACCESS_EXPIRATION=900000
+JWT_REFRESH_EXPIRATION=2592000000
 ```
 ## Документация
 

@@ -4,6 +4,7 @@ import com.pavlent1yy.gcore.dto.*;
 import com.pavlent1yy.gcore.dto.records.LoginResponse;
 import com.pavlent1yy.gcore.dto.records.UserResponse;
 import com.pavlent1yy.gcore.service.AuthService;
+import com.pavlent1yy.gcore.service.EmailVerificationService;
 import com.pavlent1yy.gcore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/core/auth")
@@ -19,9 +22,10 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
+    private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")
-    public UserResponse register(@RequestBody RegisterRequest request) {
+    public UserResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 
@@ -62,6 +66,25 @@ public class AuthController {
     @GetMapping("/me")
     public UserResponse me(Authentication authentication) {
         return userService.getCurrentUser(authentication.getName());
+    }
+
+    @PostMapping("/verify-email")
+    public Map<String, String> verifyEmail(
+            @Valid @RequestBody EmailVerificationRequest request
+    ) {
+        emailVerificationService.verify(request.getToken());
+        return Map.of("message", "Почта подтверждена. Теперь можно войти");
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<Map<String, String>> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request
+    ) {
+        emailVerificationService.resend(request.getEmail());
+        return ResponseEntity.accepted().body(Map.of(
+                "message",
+                "Если аккаунт ожидает подтверждения, новое письмо будет отправлено"
+        ));
     }
 
     @PostMapping("/refresh")

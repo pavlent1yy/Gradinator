@@ -2,6 +2,7 @@ package com.pavlent1yy.gradinator.service;
 
 import com.pavlent1yy.gradinator.entity.ScheduleEntry;
 import com.pavlent1yy.gradinator.entity.ScheduleSnapshot;
+import com.pavlent1yy.gradinator.enums.WeekType;
 import com.pavlent1yy.gradinator.repository.ScheduleEntryRepository;
 import com.pavlent1yy.gradinator.repository.ScheduleSnapshotRepository;
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,9 @@ class QueryServiceTest {
 
     @Mock
     private ScheduleEntryRepository entryRepository;
+
+    @Mock
+    private WeekService weekService;
 
     @InjectMocks
     private QueryService service;
@@ -107,6 +111,9 @@ class QueryServiceTest {
 
         when(entryRepository.findBySnapshot_Id(1L))
                 .thenReturn(List.of(secondPair, firstPair));
+
+        when(weekService.getWeekTypeByDate(date))
+                .thenReturn(WeekType.NUMERATOR);
 
 
         var result = service.getScheduleForGroup("IS1-33", date);

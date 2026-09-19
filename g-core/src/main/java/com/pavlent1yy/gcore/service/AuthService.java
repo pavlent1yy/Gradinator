@@ -32,6 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Base64;
+import java.util.Locale;
 
 @Service
 @Slf4j
@@ -49,18 +50,22 @@ public class AuthService {
     private final ScheduleService scheduleService;
     private final JwtService jwtService;
     private final JwtRefreshTokenService refreshTokenService;
+    private final EmailVerificationService emailVerificationService;
 
+    @Transactional
     public UserResponse register(RegisterRequest request){
 
         log.debug("Start user registration: email={}", request.getEmail());
 
-        if (userRepository.findByEmail(request.getEmail()).isPresent()){
+        String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
+
+        if (userRepository.findByEmail(normalizedEmail).isPresent()){
             log.warn("Registration failed: user already exists, email={}", request.getEmail());
             throw new UserAlreadyExistsException("User already exists");
         }
 
         User user = new User();
-        user.setEmail(request.getEmail());
+        user.setEmail(normalizedEmail);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.STUDENT);
 
@@ -79,8 +84,10 @@ public class AuthService {
         user.setRegisteredAt(OffsetDateTime.now());
         user.setEnabled(false);
 
+        userRepository.save(user);
+
         if (emailVerificationEnabled) {
-            //TODO
+            emailVerificationService.sendVerificationEmail(user);
         } else {
             log.debug("Email verification disabled: auto-enable user, email={}", user.getEmail());
             user.setEnabled(true);

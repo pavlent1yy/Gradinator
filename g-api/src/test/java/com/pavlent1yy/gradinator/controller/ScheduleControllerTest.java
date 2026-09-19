@@ -47,7 +47,7 @@ class ScheduleControllerTest {
 
     @Test
     void getSchedule_shouldReturnNotFound_whenSnapshotDoesNotExist() {
-        LocalDate date = LocalDate.of(2022, 1, 1);
+        LocalDate date = LocalDate.now().minusDays(1);
 
         when(queryService.getScheduleForAllGroups(date))
                 .thenReturn(Map.of());

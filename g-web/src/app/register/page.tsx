@@ -70,8 +70,9 @@ export default function RegisterPage() {
       if (!res.ok) {
         setServerMessage(data?.error ? data.error : `Ошибка регистрации`);
       } else {
-        setServerMessage('Регистрация прошла успешно. Перенаправление на страницу входа…');
-        setTimeout(() => router.push('/login'), 1200);
+        setServerMessage('Мы отправили письмо со ссылкой подтверждения. Проверьте также папку «Спам».');
+        setPassword('');
+        setConfirmPassword('');
       }
     } catch (err: any) {
       setServerMessage(err?.message ?? String(err));

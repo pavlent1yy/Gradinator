@@ -1,6 +1,7 @@
 package com.pavlent1yy.gcore.dto;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,4 +23,9 @@ public class RegisterRequest {
     private String group;
 
     private String department;
+
+    @AssertTrue(message = "Пароли не совпадают")
+    public boolean isPasswordConfirmed() {
+        return password != null && password.equals(confirmPassword);
+    }
 }
