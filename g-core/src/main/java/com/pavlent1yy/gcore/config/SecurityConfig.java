@@ -46,6 +46,8 @@ public class SecurityConfig {
                                 "/core/schedule/**",
                                 "/core/auth/login",
                                 "/core/auth/register",
+                                "/core/auth/verify-email",
+                                "/core/auth/resend-verification",
                                 "/core/auth/refresh",
                                 "/core/auth/logout"
                         )

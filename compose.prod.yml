@@ -1,26 +1,25 @@
+name: gradinator
+
 services:
-
   postgres:
-    image: postgres:18
-    container_name: gradinator-postgres
+    image: postgres:18-alpine
     restart: unless-stopped
-
-    env_file:
-      - .env
-
     environment:
       TZ: Europe/Moscow
       PGTZ: Europe/Moscow
-
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     volumes:
-      - ./postgres:/var/lib/postgresql
-
+      - gradinator_pgdata:/var/lib/postgresql
+      - ./deploy/init-databases.sql:/docker-entrypoint-initdb.d/10-init-databases.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d postgres"]
       interval: 10s
       timeout: 5s
-      retries: 5
-
+      retries: 10
+    networks:
+      - backend
 
   g-api:
     build:
@@ -28,29 +27,23 @@ services:
       dockerfile: Dockerfile
       args:
         MODULE: g-api
-
-    container_name: gradinator-g-api
     restart: unless-stopped
-
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Europe/Moscow
-      JAVA_TOOL_OPTIONS: "-Duser.timezone=Europe/Moscow"
-
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Europe/Moscow
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-
     volumes:
-      - ./scheduleFiles:/app/g-api/scheduleFiles
-      - ./groups.cfg:/app/groups.cfg
-
-    ports:
-      - "9090:9090"
-
+      - gradinator_schedule_files:/app/g-api/scheduleFiles
+      - ./groups.cfg:/app/groups.cfg:ro
+    expose:
+      - "9090"
     depends_on:
       postgres:
         condition: service_healthy
-
+    networks:
+      - backend
 
   g-core:
     build:
@@ -58,23 +51,17 @@ services:
       dockerfile: Dockerfile
       args:
         MODULE: g-core
-
-    container_name: gradinator-g-core
     restart: unless-stopped
-
     environment:
       SPRING_PROFILES_ACTIVE: prod
       TZ: Europe/Moscow
-      JAVA_TOOL_OPTIONS: "-Duser.timezone=Europe/Moscow"
-
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Europe/Moscow
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
-
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION}
       JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION}
-
       EMAIL_VERIFICATION_ENABLED: ${EMAIL_VERIFICATION_ENABLED:-false}
       EMAIL_VERIFICATION_TOKEN_TTL: ${EMAIL_VERIFICATION_TOKEN_TTL:-PT24H}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3042}
@@ -85,17 +72,15 @@ services:
       MAIL_FROM: ${MAIL_FROM:-gradinator@localhost}
       MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
       MAIL_STARTTLS: ${MAIL_STARTTLS:-true}
-
-    ports:
-      - "9091:9091"
-
+    expose:
+      - "9091"
     depends_on:
       postgres:
         condition: service_healthy
-
       g-api:
         condition: service_started
-
+    networks:
+      - backend
 
   g-web:
     build:
@@ -103,18 +88,32 @@ services:
       dockerfile: Dockerfile.web
       args:
         G_CORE_URL: http://g-core:9091
-
-    container_name: gradinator-g-web
     restart: unless-stopped
-
     environment:
       TZ: Europe/Moscow
       NODE_ENV: production
       G_CORE_URL: http://g-core:9091
-
     ports:
-      - "3042:3042"
-
+      - "127.0.0.1:3042:3042"
     depends_on:
       g-core:
         condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3042/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  gradinator_pgdata:
+  gradinator_schedule_files:

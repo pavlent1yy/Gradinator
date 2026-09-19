@@ -1,4 +1,4 @@
-package com.pavlen1yy.gcore;
+package com.pavlent1yy.gcore;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
