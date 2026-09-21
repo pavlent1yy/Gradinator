@@ -7,6 +7,7 @@ import com.pavlent1yy.gradinator.enums.SnapshotBuiltStatus;
 import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.repository.HeartbeatLogRepository;
 import com.pavlent1yy.gradinator.service.parser.ExcelFileSyncService;
+import com.pavlent1yy.gradinator.service.parser.WebParserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
