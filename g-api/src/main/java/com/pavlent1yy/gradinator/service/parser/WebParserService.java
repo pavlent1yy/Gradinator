@@ -1,8 +1,9 @@
-package com.pavlent1yy.gradinator.service;
+package com.pavlent1yy.gradinator.service.parser;
 
 import com.pavlent1yy.gradinator.enums.WeekType;
 import com.pavlent1yy.gradinator.model.CellData;
 import com.pavlent1yy.gradinator.model.PairSlot;
+import com.pavlent1yy.gradinator.service.WeekService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -34,8 +34,8 @@ public class WeekService {
         long weeksBetween = ChronoUnit.WEEKS.between(firstAcademicWeekStart, date);
 
         return weeksBetween % 2 == 0
-                ? DENOMINATOR
-                : NUMERATOR;
+                ? NUMERATOR
+                : DENOMINATOR;
     }
 
 }
