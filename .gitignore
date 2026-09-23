@@ -4,8 +4,14 @@ build/
 .gradle/
 !.mvn/wrapper/maven-wrapper.jar
 
+# Node / Next.js
+node_modules/
+.next/
+*.tsbuildinfo
+
 # Private configuration
 **/src/main/resources/private-info.properties
+**/.env
 
 # IDE
 .idea/
@@ -39,7 +45,6 @@ out/
 .DS_Store
 Thumbs.db
 
-
-.env
+# Local / generated project data
 postgres/
 scheduleFiles/
