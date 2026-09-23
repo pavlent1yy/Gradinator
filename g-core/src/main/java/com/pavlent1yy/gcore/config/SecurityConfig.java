@@ -1,12 +1,14 @@
 package com.pavlent1yy.gcore.config;
 
 
+import com.pavlent1yy.gcore.handler.OAuth2AuthenticationSuccessHandler;
 import com.pavlent1yy.gcore.service.jwt.JwtAuthenticationFilter;
 import com.pavlent1yy.gcore.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -25,6 +27,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
+    private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -54,6 +57,9 @@ public class SecurityConfig {
                         .permitAll()
                         .anyRequest()
                         .authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(oauth2AuthenticationSuccessHandler)
                 )
                 .addFilterBefore(
                         jwtAuthenticationFilter,

@@ -13,6 +13,7 @@ import com.pavlent1yy.gcore.repository.RefreshSessionRepository;
 import com.pavlent1yy.gcore.repository.UserRepository;
 import com.pavlent1yy.gcore.service.jwt.JwtRefreshTokenService;
 import com.pavlent1yy.gcore.service.jwt.JwtService;
+import com.pavlent1yy.gcore.service.jwt.TokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +52,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final JwtRefreshTokenService refreshTokenService;
     private final EmailVerificationService emailVerificationService;
+    private final TokenService tokenService;
 
     @Transactional
     public UserResponse register(RegisterRequest request){
@@ -112,14 +114,8 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "Пользователь не найден"
                 ));
-        UserDetails userDetails =
-                userDetailsService.loadUserByUsername(user.getEmail());
 
-        String accessToken = jwtService.generateToken(userDetails);
-
-        String refreshToken = refreshTokenService.create(user);
-
-        return new LoginResponse(accessToken, refreshToken);
+        return tokenService.createSession(user);
     }
 
     public void logout(String refreshToken) {
