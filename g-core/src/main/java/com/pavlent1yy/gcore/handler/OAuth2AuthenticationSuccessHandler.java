@@ -2,18 +2,14 @@ package com.pavlent1yy.gcore.handler;
 
 import com.pavlent1yy.gcore.dto.records.LoginResponse;
 import com.pavlent1yy.gcore.entity.User;
-import com.pavlent1yy.gcore.service.AuthService;
-import com.pavlent1yy.gcore.service.OAuthAccountService;
-import com.pavlent1yy.gcore.service.UserDetailsServiceImpl;
-import com.pavlent1yy.gcore.service.jwt.JwtRefreshTokenService;
-import com.pavlent1yy.gcore.service.jwt.JwtService;
+import com.pavlent1yy.gcore.service.oauth.OAuthAccountService;
 import com.pavlent1yy.gcore.service.jwt.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -28,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final OAuthAccountService oauthAccountService;
+    private final OAuth2AuthorizedClientService authorizedClientService;
     private final TokenService tokenService;
     private final ObjectMapper objectMapper;
 
@@ -36,8 +33,24 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
-        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
-        User user = oauthAccountService.getOrCreateUser(oauthUser);
+        OAuth2AuthenticationToken oauthToken =
+                (OAuth2AuthenticationToken) authentication;
+
+        OAuth2User oauthUser =
+                oauthToken.getPrincipal();
+
+        String registrationId =
+                oauthToken.getAuthorizedClientRegistrationId();
+
+        OAuth2AuthorizedClient client =
+                authorizedClientService.loadAuthorizedClient(
+                        registrationId,
+                        oauthToken.getName()
+                );
+
+        String accessToken = client.getAccessToken().getTokenValue();
+
+        User user = oauthAccountService.getOrCreateUser(oauthUser, registrationId, accessToken);
 
         LoginResponse loginResponse = tokenService.createSession(user);
         response.setContentType("application/json");
