@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
+import { usePathname } from 'next/navigation';
 import useSchedule from '../../hooks/useSchedule';
 import { useAuthContext } from './AuthProvider';
 
@@ -12,10 +13,20 @@ type ScheduleContextValue = ReturnType<typeof useSchedule> & {
 
 const ScheduleContext = createContext<ScheduleContextValue | null>(null);
 
+// Расписание нужно только на главной. На остальных страницах список групп
+// по-прежнему доступен (он дешёвый и кэшированный), а тяжёлый запрос
+// расписания не выполняется.
+function isSchedulePage(pathname: string | null): boolean {
+  return pathname === '/';
+}
+
 export function ScheduleProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuthContext();
+  const pathname = usePathname();
+  const scheduleEnabled = isSchedulePage(pathname);
+
   const homeGroup = user?.group ?? null;
-  const base = useSchedule(homeGroup);
+  const base = useSchedule(homeGroup, { scheduleEnabled });
 
   const isOwnGroup = !homeGroup || base.group === homeGroup;
 
@@ -26,7 +37,6 @@ export function ScheduleProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<ScheduleContextValue>(
     () => ({ ...base, homeGroup, isOwnGroup, goToOwnGroup }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [base, homeGroup, isOwnGroup, goToOwnGroup]
   );
 

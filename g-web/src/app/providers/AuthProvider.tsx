@@ -14,8 +14,7 @@ import type { Me } from '../../lib/api';
 
 import {
     clearAccessToken,
-    getAccessToken,
-    setAccessToken
+    getAccessToken
 } from '../../lib/auth';
 
 type AuthContextValue = {
@@ -41,32 +40,41 @@ export function AuthProvider({
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
 
-const restoreSession = useCallback(async () => {
+    const restoreSession = useCallback(async () => {
 
-    const access = getAccessToken();
+        let access = getAccessToken();
 
-		if (access) {
-			try {
-				const me = await api.fetchMe(access);
-				setUser(me);
-				return;
-			} catch {
-			}
-		}
+        // Нет access-токена (перезагрузка страницы) — сразу идём в refresh,
+        // без заведомо падающего fetchMe: экономим один RTT на каждый визит.
+        if (!access) {
+            try {
+                const tokens = await api.refreshTokens();
+                access = tokens.accessToken;
+            } catch {
+                clearAccessToken();
+                setUser(null);
+                return;
+            }
+        }
 
-		try {
-			const tokens = await api.refreshTokens();
+        try {
+            const me = await api.fetchMe(access);
+            setUser(me);
+        } catch (e) {
+            console.warn('fetchMe failed, retrying with fresh token', e);
 
-			const me = await api.fetchMe(tokens.accessToken);
+            // access мог протухнуть прямо между refresh и me — одна повторная попытка
+            try {
+                const tokens = await api.refreshTokens();
+                const me = await api.fetchMe(tokens.accessToken);
+                setUser(me);
+            } catch {
+                clearAccessToken();
+                setUser(null);
+            }
+        }
 
-			setUser(me);
-
-		} catch {
-			clearAccessToken();
-			setUser(null);
-		}
-
-	}, []);
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -85,13 +93,13 @@ const restoreSession = useCallback(async () => {
 
         try {
             const tokens = await api.login({
-				email,
-				password
-			});
+                email,
+                password
+            });
 
-			const me = await api.fetchMe(tokens.accessToken);
+            const me = await api.fetchMe(tokens.accessToken);
 
-			setUser(me);
+            setUser(me);
 
             return true;
 
@@ -109,32 +117,35 @@ const restoreSession = useCallback(async () => {
 
     }, []);
 
-	const logout = useCallback(async () => {
+    const logout = useCallback(async () => {
 
-		await api.logout();
+        await api.logout();
 
-		clearAccessToken();
-		setUser(null);
+        clearAccessToken();
+        setUser(null);
 
-	}, []);
+    }, []);
 
     const clearAuthError = useCallback(
         () => setAuthError(null),
         []
     );
 
+    const value = React.useMemo(
+        () => ({
+            user,
+            initializing,
+            authLoading,
+            authError,
+            login,
+            logout,
+            clearAuthError
+        }),
+        [user, initializing, authLoading, authError, login, logout, clearAuthError]
+    );
+
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                initializing,
-                authLoading,
-                authError,
-                login,
-                logout,
-                clearAuthError
-            }}
-        >
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

@@ -5,13 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import * as api from '../../lib/api';
 
-type RegisterPayload = {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  group?: string | null;
-};
-
 export default function RegisterPage() {
   const router = useRouter();
   const [groups, setGroups] = useState<string[]>([]);
@@ -23,14 +16,22 @@ export default function RegisterPage() {
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [clientError, setClientError] = useState<string | null>(null);
 
+  // fetchGroups кэширован: повторный заход на страницу не порождает запрос
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       try {
-        setGroups(await api.fetchGroups());
+        const gs = await api.fetchGroups();
+        if (!cancelled) setGroups(gs);
       } catch (e) {
-        console.error(e);
+        if (!cancelled) console.error(e);
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function validate() {
@@ -52,7 +53,7 @@ export default function RegisterPage() {
       return;
     }
 
-    const payload: RegisterPayload = {
+    const payload: api.RegisterPayload = {
       email,
       password,
       confirmPassword,
@@ -61,19 +62,10 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/core/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setServerMessage(data?.error ? data.error : `Ошибка регистрации`);
-      } else {
-        setServerMessage('Мы отправили письмо со ссылкой подтверждения. Проверьте также папку «Спам».');
-        setPassword('');
-        setConfirmPassword('');
-      }
+      await api.register(payload);
+      setServerMessage('Мы отправили письмо со ссылкой подтверждения. Проверьте также папку «Спам».');
+      setPassword('');
+      setConfirmPassword('');
     } catch (err: any) {
       setServerMessage(err?.message ?? String(err));
     } finally {
