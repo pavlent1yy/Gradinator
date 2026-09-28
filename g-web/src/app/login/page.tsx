@@ -72,6 +72,17 @@ export default function LoginPage() {
           </button>
         </div>
 
+        <div className="auth-actions">
+          {/*
+            Полный редирект (не Link): запускает OAuth2-рукопожатие в g-core.
+            После успеха g-core сам перенаправит на /profile.
+            Прокси /oauth2/* настроен в next.config.ts.
+          */}
+          <a href="/oauth2/authorization/google" className="btn btn-ghost">
+            Войти через Google
+          </a>
+        </div>
+
         <p className="auth-switch">
           Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>
         </p>

@@ -3,24 +3,6 @@ import type { Schedule } from '../types/schedule';
 const API_BASE = '/api/core';
 
 /* ---------------------------------------------------------------------- */
-/* Access token                                                           */
-/* ---------------------------------------------------------------------- */
-
-let accessToken: string | null = null;
-
-export function getAccessToken(): string | null {
-    return accessToken;
-}
-
-export function setAccessToken(token: string) {
-    accessToken = token;
-}
-
-export function clearAccessToken() {
-    accessToken = null;
-}
-
-/* ---------------------------------------------------------------------- */
 /* Error helpers                                                          */
 /* ---------------------------------------------------------------------- */
 
@@ -80,22 +62,31 @@ export async function fetchGroups(): Promise<string[]> {
 /* Schedule                                                               */
 /* ---------------------------------------------------------------------- */
 
-export async function changeGroup(newGroup: string): Promise<void> {
-    const accessToken = getAccessToken();
+export async function changeGroup(
+    newGroup: string
+): Promise<void> {
 
-    const res = await fetch(`${API_BASE}/user/change-group`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`
-        },
-        body: JSON.stringify({
-            newGroup
-        })
-    });
+    const res = await fetch(
+        `${API_BASE}/user/change-group`,
+        {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                newGroup
+            })
+        }
+    );
 
     if (!res.ok) {
-        throw new Error(await readErrorMessage(res, 'Не удалось изменить группу'));
+        throw new Error(
+            await readErrorMessage(
+                res,
+                'Не удалось изменить группу'
+            )
+        );
     }
 }
 
@@ -148,7 +139,7 @@ export type Me = {
 
 export async function login(
     payload: LoginPayload
-): Promise<AuthTokens> {
+): Promise<void> {
 
     const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
@@ -160,14 +151,13 @@ export async function login(
     });
 
     if (!res.ok) {
-        throw new Error(await readErrorMessage(res, 'Не удалось войти'));
+        throw new Error(
+            await readErrorMessage(
+                res,
+                'Не удалось войти'
+            )
+        );
     }
-
-    const data: AuthTokens = await res.json();
-
-    setAccessToken(data.accessToken);
-
-    return data;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -194,34 +184,41 @@ export async function register(
 /* ---------------------------------------------------------------------- */
 
 export async function logout(): Promise<void> {
-
-    await fetch(`${API_BASE}/auth/logout`, {
+    const res = await fetch(`${API_BASE}/auth/logout`, {
         method: 'POST',
         credentials: 'include'
-    }).catch(() => null);
+    });
 
-    clearAccessToken();
+    if (!res.ok) {
+        throw new Error(
+            await readErrorMessage(
+                res,
+                'Не удалось выйти'
+            )
+        );
+    }
 }
 
 /* ---------------------------------------------------------------------- */
 /* Refresh (single-flight: параллельные вызовы = один сетевой запрос)     */
 /* ---------------------------------------------------------------------- */
 
-let refreshInflight: Promise<AuthTokens> | null = null;
+let refreshInflight: Promise<void> | null = null;
 
-export function refreshTokens(): Promise<AuthTokens> {
+export function refreshTokens(): Promise<void> {
 
     if (!refreshInflight) {
         refreshInflight = (async () => {
 
-            const res = await fetch(`${API_BASE}/auth/refresh`, {
-                method: 'POST',
-                credentials: 'include'
-            });
+            const res = await fetch(
+                `${API_BASE}/auth/refresh`,
+                {
+                    method: 'POST',
+                    credentials: 'include'
+                }
+            );
 
             if (!res.ok) {
-                clearAccessToken();
-
                 throw new Error(
                     await readErrorMessage(
                         res,
@@ -230,14 +227,8 @@ export function refreshTokens(): Promise<AuthTokens> {
                 );
             }
 
-            const data: AuthTokens = await res.json();
-
-            setAccessToken(data.accessToken);
-
-            return data;
         })();
 
-        // не держим rejected-промис в переменной и не роняем unhandled rejection
         refreshInflight
             .catch(() => null)
             .finally(() => {
@@ -252,14 +243,9 @@ export function refreshTokens(): Promise<AuthTokens> {
 /* Me                                                                     */
 /* ---------------------------------------------------------------------- */
 
-export async function fetchMe(
-    accessToken: string
-): Promise<Me> {
-
+export async function fetchMe(): Promise<Me> {
     const res = await fetch(`${API_BASE}/auth/me`, {
-        headers: {
-            Authorization: `Bearer ${accessToken}`
-        }
+        credentials: 'include'
     });
 
     if (!res.ok) {

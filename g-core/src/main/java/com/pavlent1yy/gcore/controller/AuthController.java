@@ -3,6 +3,7 @@ package com.pavlent1yy.gcore.controller;
 import com.pavlent1yy.gcore.dto.*;
 import com.pavlent1yy.gcore.dto.records.LoginResponse;
 import com.pavlent1yy.gcore.dto.records.UserResponse;
+import com.pavlent1yy.gcore.service.AuthCookieService;
 import com.pavlent1yy.gcore.service.AuthService;
 import com.pavlent1yy.gcore.service.EmailVerificationService;
 import com.pavlent1yy.gcore.service.UserService;
@@ -22,6 +23,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserService userService;
+    private final AuthCookieService authCookieService;
     private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")
@@ -36,28 +38,27 @@ public class AuthController {
         LoginResponse response = authService.login(request);
 
         return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        authService.createRefreshCookie(response.refreshToken()).toString()
-                )
-                .body(new LoginResponse(
-                        response.accessToken(),
-                        null
-                ));
+                .header(HttpHeaders.SET_COOKIE,
+                        authService.createRefreshCookie(response.refreshToken()).toString()).body(
+                                new LoginResponse(response.accessToken(), null));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @CookieValue(value = "gradinator_refresh", required = false)
-            String refreshToken) {
+            String refreshToken
+    ) {
+
         if (refreshToken != null) {
             authService.logout(refreshToken);
         }
 
         return ResponseEntity.noContent()
                 .header(
-                        HttpHeaders.SET_COOKIE,
-                        authService.deleteRefreshCookie().toString()
+                        HttpHeaders.SET_COOKIE, authCookieService.clearAccessCookie().toString()
+                )
+                .header(
+                        HttpHeaders.SET_COOKIE, authCookieService.clearRefreshCookie().toString()
                 )
                 .build();
     }

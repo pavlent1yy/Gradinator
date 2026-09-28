@@ -9,25 +9,23 @@ import React, {
 } from 'react';
 
 import * as api from '../../lib/api';
-
 import type { Me } from '../../lib/api';
-
-import {
-    clearAccessToken,
-    getAccessToken
-} from '../../lib/auth';
 
 type AuthContextValue = {
     user: Me | null;
     initializing: boolean;
     authLoading: boolean;
     authError: string | null;
-    login: (email: string, password: string) => Promise<boolean>;
+    login: (
+        email: string,
+        password: string
+    ) => Promise<boolean>;
     logout: () => Promise<void>;
     clearAuthError: () => void;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const AuthContext =
+    createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({
     children
@@ -35,52 +33,58 @@ export function AuthProvider({
     children: React.ReactNode;
 }) {
 
-    const [user, setUser] = useState<Me | null>(null);
-    const [initializing, setInitializing] = useState(true);
-    const [authLoading, setAuthLoading] = useState(false);
-    const [authError, setAuthError] = useState<string | null>(null);
+    const [user, setUser] =
+        useState<Me | null>(null);
+
+    const [initializing, setInitializing] =
+        useState(true);
+
+    const [authLoading, setAuthLoading] =
+        useState(false);
+
+    const [authError, setAuthError] =
+        useState<string | null>(null);
 
     const restoreSession = useCallback(async () => {
 
-        let access = getAccessToken();
+        try {
+            const me = await api.fetchMe();
 
-        // Нет access-токена (перезагрузка страницы) — сразу идём в refresh,
-        // без заведомо падающего fetchMe: экономим один RTT на каждый визит.
-        if (!access) {
-            try {
-                const tokens = await api.refreshTokens();
-                access = tokens.accessToken;
-            } catch {
-                clearAccessToken();
-                setUser(null);
-                return;
-            }
+            setUser(me);
+
+            return;
+
+        } catch {
+            // access token отсутствует
+            // или истёк
         }
 
         try {
-            const me = await api.fetchMe(access);
-            setUser(me);
-        } catch (e) {
-            console.warn('fetchMe failed, retrying with fresh token', e);
 
-            // access мог протухнуть прямо между refresh и me — одна повторная попытка
-            try {
-                const tokens = await api.refreshTokens();
-                const me = await api.fetchMe(tokens.accessToken);
-                setUser(me);
-            } catch {
-                clearAccessToken();
-                setUser(null);
-            }
+            await api.refreshTokens();
+
+            const me = await api.fetchMe();
+
+            setUser(me);
+
+        } catch {
+
+            setUser(null);
+
         }
 
     }, []);
 
     useEffect(() => {
+
         (async () => {
+
             await restoreSession();
+
             setInitializing(false);
+
         })();
+
     }, [restoreSession]);
 
     const login = useCallback(async (
@@ -92,12 +96,13 @@ export function AuthProvider({
         setAuthError(null);
 
         try {
-            const tokens = await api.login({
+
+            await api.login({
                 email,
                 password
             });
 
-            const me = await api.fetchMe(tokens.accessToken);
+            const me = await api.fetchMe();
 
             setUser(me);
 
@@ -112,7 +117,9 @@ export function AuthProvider({
             return false;
 
         } finally {
+
             setAuthLoading(false);
+
         }
 
     }, []);
@@ -121,7 +128,6 @@ export function AuthProvider({
 
         await api.logout();
 
-        clearAccessToken();
         setUser(null);
 
     }, []);
@@ -141,7 +147,15 @@ export function AuthProvider({
             logout,
             clearAuthError
         }),
-        [user, initializing, authLoading, authError, login, logout, clearAuthError]
+        [
+            user,
+            initializing,
+            authLoading,
+            authError,
+            login,
+            logout,
+            clearAuthError
+        ]
     );
 
     return (

@@ -2,9 +2,11 @@ package com.pavlent1yy.gcore.service.jwt;
 
 import com.pavlent1yy.gcore.dto.records.LoginResponse;
 import com.pavlent1yy.gcore.entity.User;
+import com.pavlent1yy.gcore.repository.UserRepository;
 import com.pavlent1yy.gcore.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TokenService {
 
+    private final UserRepository userRepository;
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtService jwtService;
     private final JwtRefreshTokenService refreshTokenService;
@@ -19,12 +22,13 @@ public class TokenService {
     @Transactional
     public LoginResponse createSession(User user) {
 
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-        String accessToken = jwtService.generateToken(userDetails);
+        User managedUser = userRepository.findById(user.getId()).orElseThrow(()
+                        -> new UsernameNotFoundException("Пользователь не найден"));
 
-        String refreshToken = refreshTokenService.create(user);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(managedUser.getEmail());
+        String accessToken = jwtService.generateToken(userDetails);
+        String refreshToken = refreshTokenService.create(managedUser);
 
         return new LoginResponse(accessToken, refreshToken);
     }
-
 }
