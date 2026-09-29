@@ -72,14 +72,16 @@ public class JwtRefreshTokenService {
 
     @Transactional
     public void revoke(String token) {
-        RefreshSession session = refreshSessionRepository
+        refreshSessionRepository
                 .findByRefreshTokenHash(hash(token))
-                .orElseThrow(() ->  new InvalidRefreshTokenException("Invalid refresh token"));
+                .ifPresent(session -> {
 
-        if (session.getRevokedAt() == null) {
-            session.setRevokedAt(OffsetDateTime.now());
-            refreshSessionRepository.save(session);
-        }
+                    if (session.getRevokedAt() == null) {
+                        session.setRevokedAt(OffsetDateTime.now());
+                        refreshSessionRepository.save(session);
+                    }
+
+                });
     }
 
     @Transactional

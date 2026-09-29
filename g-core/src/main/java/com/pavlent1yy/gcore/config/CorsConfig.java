@@ -1,5 +1,6 @@
 package com.pavlent1yy.gcore.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -11,6 +12,9 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    @Value("${core.public-url}")
+    private String gWebURL;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
@@ -18,7 +22,7 @@ public class CorsConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:3000")
+                List.of(gWebURL)
         );
 
         configuration.setAllowedMethods(
