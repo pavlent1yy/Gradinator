@@ -54,6 +54,8 @@ export default function useSchedule(
   const scheduleEnabled = options?.scheduleEnabled ?? true;
 
   const [groups, setGroups] = useState<string[]>([]);
+  const [groupsByDepartment, setGroupsByDepartment] = useState<Record<string, string[]>>({});
+  const [department, setDepartmentState] = useState<string>(''); // '' = все отделения
   const [group, setGroupState] = useState<string>('');
   const [date, setDateState] = useState<string>(() => toIsoDate(new Date()));
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -87,10 +89,14 @@ export default function useSchedule(
 
     (async () => {
       try {
-        const gs = await api.fetchGroups();
+        const [gs, byDept] = await Promise.all([
+          api.fetchGroups(),
+          api.fetchGroupsByDepartment()
+        ]);
         if (cancelled) return;
 
         setGroups(gs);
+        setGroupsByDepartment(byDept);
 
         if (initializedGroup.current) return;
 
@@ -185,6 +191,10 @@ export default function useSchedule(
     writeStoredGroup(g);
   }, []);
 
+  // Выбор отделения фильтрует список групп в комбо (Header, профиль).
+  // '' — сброс фильтра, показываем все группы как раньше.
+  const setDepartment = useCallback((d: string) => setDepartmentState(d), []);
+
   const setDate = useCallback((iso: string) => setDateState(iso), []);
   const prevDate = useCallback(() => setDateState((d) => addDays(d, -1)), []);
   const nextDate = useCallback(() => setDateState((d) => addDays(d, 1)), []);
@@ -192,9 +202,18 @@ export default function useSchedule(
 
   const refresh = useCallback(() => load(group, date), [load, group, date]);
 
+  const departments = useMemo(
+    () => Object.keys(groupsByDepartment),
+    [groupsByDepartment]
+  );
+
   return useMemo(
     () => ({
       groups,
+      groupsByDepartment,
+      departments,
+      department,
+      setDepartment,
       group,
       setGroup,
       date,
@@ -211,6 +230,9 @@ export default function useSchedule(
     }),
     [
       groups,
+      groupsByDepartment,
+      departments,
+      department,
       group,
       date,
       schedule,

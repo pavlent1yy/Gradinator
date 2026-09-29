@@ -23,6 +23,10 @@ export default function Header() {
 
   const {
     groups,
+    groupsByDepartment,
+    departments,
+    department,
+    setDepartment,
     group,
     setGroup,
     date,
@@ -48,6 +52,12 @@ export default function Header() {
     () => weekTypeLabel(schedule?.weekType),
     [schedule?.weekType]
   );
+  // выбранное отделение фильтрует список групп; без отделения — всё как раньше
+  const visibleGroups = useMemo(
+    () => (department ? (groupsByDepartment[department] ?? groups) : groups),
+    [department, groupsByDepartment, groups]
+  );
+
   const updatedLabel = useMemo(() => {
     if (!updatedAt) return 'Информация от —';
     return `Информация от ${updatedAt.toLocaleString('ru-RU')}`;
@@ -156,7 +166,15 @@ export default function Header() {
       {!isAuthPage && (
         <div className="mast-row mast-row--bottom">
           <div className="group-row">
-            <Combo label="Выбрать группу" options={groups} value={group} onChange={setGroup} homeGroup={homeGroup} />
+            <Combo
+              label="Отделение"
+              options={departments}
+              value={department}
+              onChange={setDepartment}
+              includeAll
+              allLabel="Все отделения"
+            />
+            <Combo label="Выбрать группу" options={visibleGroups} value={group} onChange={setGroup} homeGroup={homeGroup} />
             {!isOwnGroup && homeGroup && (
               <button type="button" className="own-group-pin" onClick={goToOwnGroup}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

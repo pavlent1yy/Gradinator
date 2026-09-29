@@ -1,192 +1,180 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
 import { useRouter } from 'next/navigation';
-
 import { useAuthContext } from '../providers/AuthProvider';
-
 import * as api from '../../lib/api';
 
-const ROLE_LABELS: Record<string, string> = {
-STUDENT: 'Студент',
-TEACHER: 'Преподаватель',
-ADMIN: 'Администратор'
-};
-
-function initialsFromEmail(email: string) {
-const name = email.split('@')[0] || email;
-return name.slice(0, 2).toUpperCase();
-}
-
 export default function ProfilePage() {
+    const router = useRouter();
+    const { user, initializing, logout } = useAuthContext();
 
-const router = useRouter();
+    const [groups, setGroups] = useState<string[]>([]);
+    const [groupsByDepartment, setGroupsByDepartment] = useState<Record<string, string[]>>({});
+    const [department, setDepartment] = useState('');
+    const [selectedGroup, setSelectedGroup] = useState('');
+    const [groupMessage, setGroupMessage] = useState('');
+    const [changingGroup, setChangingGroup] = useState(false);
+    const [editingGroup, setEditingGroup] = useState(false);
 
-const { user, initializing, logout } = useAuthContext();
+    useEffect(() => {
+        if (!initializing && !user) {
+            router.replace('/login');
+        }
+    }, [initializing, user, router]);
 
-const [editingGroup, setEditingGroup] = useState(false);
-const [groups, setGroups] = useState<string[]>([]);
-const [selectedGroup, setSelectedGroup] = useState('');
-const [changingGroup, setChangingGroup] = useState(false);
-const [groupMessage, setGroupMessage] = useState('');
-
-useEffect(() => {
-    if (!initializing && !user) {
-        router.replace('/login');
+    if (initializing) {
+        return (
+            <div className="status-card" role="status">
+                Загрузка…
+            </div>
+        );
     }
-}, [initializing, user, router]);
 
-if (initializing) {
-    return (
-        <div className="status-card" role="status">
-            Загрузка профиля…
-        </div>
-    );
-}
-
-if (!user) {
-    return null;
-}
-
-async function startGroupEdit() {
     if (!user) {
-        return;
+        return null;
     }
 
-    try {
-        const data = await api.fetchGroups();
-
-        setGroups(data);
-        setSelectedGroup(user.group ?? '');
-        setGroupMessage('');
+    async function startGroupEdit() {
         setEditingGroup(true);
+        setGroupMessage('');
 
-    } catch (error) {
-        setGroupMessage(
-            error instanceof Error
-                ? error.message
-                : 'Не удалось загрузить группы'
-        );
+        try {
+            const [data, byDept] = await Promise.all([
+                api.fetchGroups(),
+                api.fetchGroupsByDepartment()
+            ]);
+
+            setGroups(data);
+            setGroupsByDepartment(byDept);
+
+            const dept = user!.group
+                ? await api.findDepartmentByGroup(user!.group)
+                : null;
+
+            setDepartment(dept ?? '');
+            setSelectedGroup(user!.group ?? '');
+        } catch {
+            setGroupMessage('Не удалось загрузить список групп.');
+            setEditingGroup(false);
+        }
     }
-}
 
-async function onChangeGroup() {
-    if (!user) {
-        return;
+    async function onChangeGroup(e: React.FormEvent) {
+        e.preventDefault();
+
+        if (!selectedGroup) {
+            setGroupMessage('Выберите группу.');
+            return;
+        }
+
+        setChangingGroup(true);
+        setGroupMessage('');
+
+        try {
+            await api.changeGroup(selectedGroup);
+
+            setGroupMessage('Группа успешно изменена.');
+            setEditingGroup(false);
+        } catch (error) {
+            setGroupMessage(
+                error instanceof Error
+                    ? error.message
+                    : 'Не удалось изменить группу.'
+            );
+        } finally {
+            setChangingGroup(false);
+        }
     }
 
-    if (!selectedGroup || selectedGroup === user.group) {
-        return;
-    }
+    return (
+        <section className="profile-panel" aria-labelledby="profile-title">
+            <h1 id="profile-title" className="auth-title">
+                Профиль
+            </h1>
 
-    setChangingGroup(true);
-    setGroupMessage('');
-
-    try {
-        await api.changeGroup(selectedGroup);
-
-        setEditingGroup(false);
-        setGroupMessage('Группа успешно изменена.');
-
-    } catch (error) {
-        setGroupMessage(
-            error instanceof Error
-                ? error.message
-                : 'Не удалось изменить группу'
-        );
-
-    } finally {
-        setChangingGroup(false);
-    }
-}
-
-async function onLogout() {
-    await logout();
-    router.push('/login');
-}
-
-return (
-    <section
-        className="auth-panel profile-card"
-        aria-labelledby="profile-title"
-    >
-
-        <div className="profile-id">
-            <span className="profile-avatar">
-                {initialsFromEmail(user.email)}
-            </span>
-
-            <div>
-                <div id="profile-title" className="profile-name">
-                    {user.email}
-                </div>
-
-                <span className="profile-role">
-                    {ROLE_LABELS[user.role] ?? user.role}
-                </span>
-            </div>
-        </div>
-
-        <dl className="profile-rows">
-
-            <div className="profile-row">
-                <dt>ID</dt>
-                <dd>#{user.id}</dd>
+            <div className="profile-field">
+                <span className="profile-label">Email</span>
+                <span className="profile-value">{user.email}</span>
             </div>
 
-            <div className="profile-row">
-                <dt>Email</dt>
-                <dd>{user.email}</dd>
+            <div className="profile-field">
+                <span className="profile-label">Роль</span>
+                <span className="profile-value">{user.role}</span>
             </div>
 
-            <div className="profile-row">
-                <dt>Группа</dt>
+            <div className="profile-field">
+                <span className="profile-label">Группа</span>
 
-                <dd>
-                    {!editingGroup ? (
-                        <>
-                            <span>
-                                {user.group ?? '— не указана —'}
-                            </span>
+                {!editingGroup && (
+                    <span className="profile-value">
+                        {user.group ?? 'не указана'}
+                    </span>
+                )}
 
-                            <button
-                                type="button"
-                                className="btn btn-ghost"
-                                onClick={startGroupEdit}
+                {editingGroup && (
+                    <form
+                        className="group-edit-form"
+                        onSubmit={onChangeGroup}
+                    >
+                        <div className="field">
+                            <label
+                                htmlFor="groupSelect"
+                                className="field-label"
                             >
-                                Сменить группу
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <select
-                                className="field-input field-select"
-                                value={selectedGroup}
-                                onChange={(e) =>
-                                    setSelectedGroup(e.target.value)
-                                }
-                            >
-                                <option value="">
-                                    Выберите группу
-                                </option>
+                                Новая группа
+                            </label>
 
-                                {groups.map((group) => (
-                                    <option key={group} value={group}>
-                                        {group}
+                            <div className="group-edit-row">
+                                <select
+                                    className="field-input field-select"
+                                    value={department}
+                                    onChange={(e) => {
+                                        const d = e.target.value;
+                                        setDepartment(d);
+                                        const list = d
+                                            ? (groupsByDepartment[d] ?? [])
+                                            : groups;
+                                        setSelectedGroup((prev) =>
+                                            prev && list.includes(prev) ? prev : ''
+                                        );
+                                    }}
+                                >
+                                    <option value="">Все отделения</option>
+                                    {Object.keys(groupsByDepartment).map((d) => (
+                                        <option key={d} value={d}>{d}</option>
+                                    ))}
+                                </select>
+
+                                <select
+                                    id="groupSelect"
+                                    className="field-input field-select"
+                                    value={selectedGroup}
+                                    onChange={(e) =>
+                                        setSelectedGroup(e.target.value)
+                                    }
+                                >
+                                    <option value="">
+                                        Выберите группу
                                     </option>
-                                ))}
-                            </select>
 
+                                    {(department
+                                        ? (groupsByDepartment[department] ?? [])
+                                        : groups
+                                    ).map((group) => (
+                                        <option key={group} value={group}>
+                                            {group}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="auth-actions">
                             <button
-                                type="button"
+                                type="submit"
                                 className="btn btn-primary"
-                                onClick={onChangeGroup}
-                                disabled={
-                                    !selectedGroup ||
-                                    selectedGroup === user.group ||
-                                    changingGroup
-                                }
+                                disabled={changingGroup}
                             >
                                 {changingGroup
                                     ? 'Сохранение…'
@@ -196,63 +184,48 @@ return (
                             <button
                                 type="button"
                                 className="btn btn-ghost"
-                                onClick={() => {
-                                    setEditingGroup(false);
-                                    setGroupMessage('');
-                                }}
+                                onClick={() => setEditingGroup(false)}
                             >
                                 Отмена
                             </button>
-                        </>
-                    )}
-                </dd>
+                        </div>
+                    </form>
+                )}
             </div>
 
-            <div className="profile-row">
-                <dt>Роль</dt>
+            {groupMessage && (
+                <div className="warning-note" role="alert">
+                    {groupMessage}
+                </div>
+            )}
 
-                <dd>
-                    {ROLE_LABELS[user.role] ?? user.role}
-                </dd>
-            </div>
+            {!editingGroup && (
+                <div className="auth-actions">
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={startGroupEdit}
+                    >
+                        Сменить группу
+                    </button>
 
-        </dl>
+                    <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => router.push('/change-password')}
+                    >
+                        Сменить пароль
+                    </button>
 
-        {groupMessage && (
-            <div className="warning-note" role="status">
-                {groupMessage}
-            </div>
-        )}
-
-        <div className="auth-actions">
-
-            <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => router.push('/')}
-            >
-                К расписанию
-            </button>
-
-            <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => router.push('/change-password')}
-            >
-                Сменить пароль
-            </button>
-
-            <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={onLogout}
-            >
-                Выйти
-            </button>
-
-        </div>
-
-    </section>
-);
-
+                    <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={logout}
+                    >
+                        Выйти
+                    </button>
+                </div>
+            )}
+        </section>
+    );
 }

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+
+const ALL_VALUE = '__all__';
 
 type Props = {
   label?: string;
@@ -8,24 +10,44 @@ type Props = {
   value?: string;
   onChange: (v: string) => void;
   homeGroup?: string | null;
+  /** Добавить первым пунктом «все» (value === '') — для фильтра по отделениям */
+  includeAll?: boolean;
+  allLabel?: string;
 };
 
 const STORAGE_KEY = 'gradinator.selectedGroup';
 
-export default function Combo({ label = 'Выбрать', options, value, onChange, homeGroup }: Props) {
+export default function Combo({
+  label = 'Выбрать',
+  options,
+  value,
+  onChange,
+  homeGroup,
+  includeAll = false,
+  allLabel = 'Все'
+}: Props) {
+  const uid = useId();
   const [open, setOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
   const listRef = useRef<HTMLUListElement | null>(null);
   const toggleRef = useRef<HTMLButtonElement | null>(null);
 
+  // Эффективный список пунктов: при includeAll первым идёт псевдо-опция «все»
+  const items = useMemo(
+    () => (includeAll ? [ALL_VALUE, ...options] : options),
+    [includeAll, options]
+  );
+
+  const isAllSelected = includeAll && !value;
+
   useEffect(() => {
     if (!open) {
-      setFocusedIndex(options.findIndex(o => o === value));
+      setFocusedIndex(items.findIndex(o => o === value));
     } else {
-      setFocusedIndex(options.findIndex(o => o === value) ?? 0);
+      setFocusedIndex(items.findIndex(o => o === value) ?? 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, options, value]);
+  }, [open, items, value]);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -45,8 +67,10 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
   }, [open]);
 
   function select(sel: string) {
-    onChange(sel);
-    try { localStorage.setItem(STORAGE_KEY, sel); } catch {}
+    onChange(sel === ALL_VALUE ? '' : sel);
+    if (sel !== ALL_VALUE) {
+      try { localStorage.setItem(STORAGE_KEY, sel); } catch {}
+    }
     setOpen(false);
   }
 
@@ -60,14 +84,14 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
     }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setFocusedIndex(i => Math.min(options.length - 1, (i + 1) || 0));
+      setFocusedIndex(i => Math.min(items.length - 1, (i + 1) || 0));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setFocusedIndex(i => Math.max(0, (i - 1) || 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (focusedIndex >= 0 && options[focusedIndex]) {
-        select(options[focusedIndex]);
+      if (focusedIndex >= 0 && items[focusedIndex]) {
+        select(items[focusedIndex]);
       }
     } else if (e.key === 'Escape') {
       setOpen(false);
@@ -81,11 +105,14 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
     }
   }, [focusedIndex]);
 
-  const selectedLabel = useMemo(() => value || '—', [value]);
+  const selectedLabel = useMemo(() => {
+    if (isAllSelected) return allLabel;
+    return value || '—';
+  }, [isAllSelected, allLabel, value]);
 
   return (
-    <div id="combo" className="combo combo--small" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls="combo-list" aria-labelledby="combo-label">
-      <div className="combo-field" id="combo-label">
+    <div id={`combo-${uid}`} className="combo combo--small" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={`combo-list-${uid}`} aria-labelledby={`combo-label-${uid}`}>
+      <div className="combo-field" id={`combo-label-${uid}`}>
         <span className="combo-tab">Группа</span>
         <button
           type="button"
@@ -103,7 +130,7 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
       </div>
 
       <ul
-        id="combo-list"
+        id={`combo-list-${uid}`}
         className={`combo-list ${open ? 'open' : ''}`}
         role="listbox"
         tabIndex={-1}
@@ -111,20 +138,23 @@ export default function Combo({ label = 'Выбрать', options, value, onChan
         ref={listRef}
         onKeyDown={onKeyDown}
       >
-        {options.map((opt, idx) => (
-          <li
-            key={opt}
-            role="option"
-            data-value={opt}
-            aria-selected={opt === value}
-            className={focusedIndex === idx ? 'focused' : undefined}
-            onClick={() => select(opt)}
-            onMouseEnter={() => setFocusedIndex(idx)}
-          >
-            <span>{opt}</span>
-            {homeGroup && opt === homeGroup && <span className="own-tag">моя</span>}
-          </li>
-        ))}
+        {items.map((opt, idx) => {
+          const isAll = opt === ALL_VALUE;
+          return (
+            <li
+              key={isAll ? ALL_VALUE : opt}
+              role="option"
+              data-value={opt}
+              aria-selected={isAll ? isAllSelected : opt === value}
+              className={focusedIndex === idx ? 'focused' : undefined}
+              onClick={() => select(opt)}
+              onMouseEnter={() => setFocusedIndex(idx)}
+            >
+              <span>{isAll ? allLabel : opt}</span>
+              {homeGroup && !isAll && opt === homeGroup && <span className="own-tag">моя</span>}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

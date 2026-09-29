@@ -59,6 +59,68 @@ export async function fetchGroups(): Promise<string[]> {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Departments (кэш + dedupe)                                             */
+/* ---------------------------------------------------------------------- */
+
+let departmentsCache: Record<string, string[]> | null = null;
+let departmentsInflight: Promise<Record<string, string[]>> | null = null;
+
+const departmentByGroupCache = new Map<string, string>();
+
+/**
+ * Группы, разбитые по отделениям: { "OIT": ["ИС1-11", ...], ... }
+ * Кэшируется так же, как fetchGroups.
+ */
+export async function fetchGroupsByDepartment(): Promise<Record<string, string[]>> {
+    if (departmentsCache) return departmentsCache;
+    if (departmentsInflight) return departmentsInflight;
+
+    departmentsInflight = (async () => {
+        const res = await fetch(`${API_BASE}/schedule/groups/departments`);
+
+        if (!res.ok) throw new Error(`fetchGroupsByDepartment: ${res.status}`);
+
+        const data = await res.json();
+
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error('Invalid departments response');
+        }
+
+        departmentsCache = data as Record<string, string[]>;
+        return departmentsCache;
+    })();
+
+    try {
+        return await departmentsInflight;
+    } finally {
+        departmentsInflight = null;
+    }
+}
+
+/**
+ * Отделение для конкретной группы (/groups/find-department).
+ * Маленький кэш на группу — вызывается при редактировании профиля.
+ */
+export async function findDepartmentByGroup(group: string): Promise<string | null> {
+    if (!group) return null;
+
+    const cached = departmentByGroupCache.get(group);
+    if (cached) return cached;
+
+    const res = await fetch(
+        `${API_BASE}/schedule/groups/find-department?group=${encodeURIComponent(group)}`
+    );
+
+    if (!res.ok) return null;
+
+    const dept = (await res.text()).trim();
+    if (!dept) return null;
+
+    departmentByGroupCache.set(group, dept);
+    return dept;
+}
+
+/* ---------------------------------------------------------------------- */
 /* Schedule                                                               */
 /* ---------------------------------------------------------------------- */
 
@@ -187,6 +249,13 @@ export async function logout(): Promise<void> {
     const res = await fetch(`${API_BASE}/auth/logout`, {
         method: 'POST',
         credentials: 'include'
+    });
+
+    console.log('LOGOUT:', {
+        status: res.status,
+        url: res.url,
+        headers: Object.fromEntries(res.headers.entries()),
+        body: await res.clone().text()
     });
 
     if (!res.ok) {

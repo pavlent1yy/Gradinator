@@ -926,3 +926,30 @@ body{
   .icon-btn.btn-spin svg{ animation:none; }
   *{ transition-duration:0.001ms !important; }
 }
+
+.auth-actions--oauth {
+  gap: 8px;
+}
+
+.btn-oauth {
+  gap: 8px;
+}
+
+.btn-oauth svg {
+  flex: 0 0 auto;
+}
+
+.btn-oauth:hover {
+  background: var(--paper-white);
+}
+
+.group-edit-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.group-edit-row .field-select {
+  min-width: 150px;
+  flex: 1;
+}
