@@ -88,6 +88,18 @@ class ReferenceControllerTest {
         verify(denominatorQuery).getResultList();
     }
 
+    @Test
+    void getRooms_shouldMergeSortAndDeduplicate() {
+        mockQueries(
+                "SELECT DISTINCT v FROM ScheduleEntry e JOIN e.numeratorRooms v",
+                "SELECT DISTINCT v FROM ScheduleEntry e JOIN e.denominatorRooms v",
+                List.of("303", "101"),
+                List.of("101", "202")
+        );
+
+        assertThat(controller.getRooms()).containsExactly("101", "202", "303");
+    }
+
     private void mockQueries(
             String numeratorJpql,
             String denominatorJpql,

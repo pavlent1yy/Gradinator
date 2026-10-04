@@ -1,12 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '../providers/AuthProvider';
 
+const OAUTH_ERROR_MESSAGE = 'Не удалось войти через Google/GitHub. Попробуйте ещё раз.';
+
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const oauthFailed = searchParams.get('error') === 'oauth';
   const { login, authLoading, authError, clearAuthError } = useAuthContext();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +41,7 @@ export default function LoginPage() {
     }
   }
 
-  const message = clientMessage ?? authError;
+  const message = clientMessage ?? authError ?? (oauthFailed ? OAUTH_ERROR_MESSAGE : null);
 
   return (
     <section className="auth-panel" aria-labelledby="login-title">

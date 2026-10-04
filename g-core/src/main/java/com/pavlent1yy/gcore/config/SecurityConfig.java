@@ -5,6 +5,7 @@ import com.pavlent1yy.gcore.handler.OAuth2AuthenticationSuccessHandler;
 import com.pavlent1yy.gcore.service.jwt.JwtAuthenticationFilter;
 import com.pavlent1yy.gcore.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,6 +28,9 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 public class SecurityConfig {
 
     private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
@@ -60,6 +64,7 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oauth2AuthenticationSuccessHandler)
+                        .failureUrl(frontendUrl + "/login?error=oauth")
                 )
                 .addFilterBefore(
                         jwtAuthenticationFilter,

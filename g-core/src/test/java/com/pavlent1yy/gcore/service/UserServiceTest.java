@@ -4,13 +4,16 @@ import com.pavlent1yy.gcore.customExceptions.GroupNotFoundException;
 import com.pavlent1yy.gcore.customExceptions.PasswordIsIncorrect;
 import com.pavlent1yy.gcore.dto.records.ChangeGroupRequest;
 import com.pavlent1yy.gcore.dto.records.ChangePasswordRequest;
+import com.pavlent1yy.gcore.dto.records.UserResponse;
 import com.pavlent1yy.gcore.entity.User;
+import com.pavlent1yy.gcore.enums.Role;
 import com.pavlent1yy.gcore.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -77,6 +80,46 @@ class UserServiceTest {
 
         assertThat(user.getPasswordHash()).isEqualTo("new-hash");
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void returnsCurrentUser() {
+        User user = user("hash");
+        user.setId(3L);
+        user.setGroup("ИС1-33");
+        user.setDepartment("oit");
+        user.setRole(Role.STUDENT);
+
+        assertThat(userService.getCurrentUser("user@mail.ru")).isEqualTo(new UserResponse(
+                3L, "user@mail.ru", "ИС1-33", "oit", Role.STUDENT));
+    }
+
+    @Test
+    void unknownUserIsRejected() {
+        when(userRepository.findByEmail("x@mail.ru")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.getCurrentUser("x@mail.ru"))
+                .isInstanceOf(UsernameNotFoundException.class);
+    }
+
+    @Test
+    void rejectsWrongOldPassword() {
+        User user = user("old-hash");
+        when(passwordEncoder.matches("wrong", "old-hash")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.changePassword("user@mail.ru", new ChangePasswordRequest("wrong", "new")))
+                .isInstanceOf(PasswordIsIncorrect.class);
+        assertThat(user.getPasswordHash()).isEqualTo("old-hash");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectsNullGroup() {
+        user("hash");
+
+        assertThatThrownBy(() -> userService.changeGroup("user@mail.ru", new ChangeGroupRequest(null)))
+                .isInstanceOf(GroupNotFoundException.class);
+        verifyNoInteractions(scheduleService);
     }
 
     @Test

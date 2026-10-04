@@ -102,6 +102,67 @@ class OAuthAccountServiceTest {
     }
 
     @Test
+    void githubUsesNumericIdAndPrimaryEmailFromApi() {
+        OAuth2User oauthUser = mock(OAuth2User.class);
+        when(oauthUser.getAttribute("id")).thenReturn(12345);
+        when(githubOAuthService.getEmail("gh-token")).thenReturn("dev@mail.ru");
+        when(oauthAccountRepository.findByProviderAndProviderUserId(OAuthProvider.GITHUB, "12345"))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByEmail("dev@mail.ru")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User user = oauthAccountService.getOrCreateUser(oauthUser, "github", "gh-token");
+
+        assertThat(user.getEmail()).isEqualTo("dev@mail.ru");
+        ArgumentCaptor<UserOAuthAccount> account = ArgumentCaptor.forClass(UserOAuthAccount.class);
+        verify(oauthAccountRepository).save(account.capture());
+        assertThat(account.getValue().getProvider()).isEqualTo(OAuthProvider.GITHUB);
+        assertThat(account.getValue().getProviderUserId()).isEqualTo("12345");
+    }
+
+    @Test
+    void vkUsesUserIdAttribute() {
+        OAuth2User oauthUser = mock(OAuth2User.class);
+        when(oauthUser.getAttribute("user_id")).thenReturn(777L);
+        when(oauthUser.getAttribute("email")).thenReturn("vk@mail.ru");
+        User linked = new User();
+        UserOAuthAccount account = new UserOAuthAccount();
+        account.setUser(linked);
+        when(oauthAccountRepository.findByProviderAndProviderUserId(OAuthProvider.VK, "777"))
+                .thenReturn(Optional.of(account));
+
+        assertThat(oauthAccountService.getOrCreateUser(oauthUser, "vk", "token")).isSameAs(linked);
+    }
+
+    @Test
+    void doesNotDuplicateAlreadyExistingAccountLink() {
+        User existing = new User();
+        when(oauthAccountRepository.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, "g-5"))
+                .thenReturn(Optional.empty());
+        when(userRepository.findByEmail("old@mail.ru")).thenReturn(Optional.of(existing));
+        when(oauthAccountRepository.existsByProviderAndProviderUserId(OAuthProvider.GOOGLE, "g-5")).thenReturn(true);
+
+        assertThat(oauthAccountService.getOrCreateUser(googleUser("g-5", "old@mail.ru"), "google", "token"))
+                .isSameAs(existing);
+        verify(oauthAccountRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectsLiteralNullEmailAndMissingId() {
+        assertThatThrownBy(() -> oauthAccountService.getOrCreateUser(googleUser("g-6", "null"), "google", "token"))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> oauthAccountService.getOrCreateUser(googleUser(null, "a@mail.ru"), "google", "token"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void rejectsUnknownProvider() {
+        assertThatThrownBy(() -> oauthAccountService.getOrCreateUser(mock(OAuth2User.class), "facebook", "token"))
+                .isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(userRepository, oauthAccountRepository);
+    }
+
+    @Test
     void rejectsProviderWithoutEmail() {
         OAuth2User oauthUser = googleUser("g-4", null);
 

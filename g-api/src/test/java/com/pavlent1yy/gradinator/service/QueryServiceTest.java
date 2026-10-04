@@ -206,4 +206,81 @@ class QueryServiceTest {
         verify(entryRepository)
                 .findBySnapshot_Id(1L);
     }
+
+    private static ScheduleEntry entry(String group, int pair, List<String> numSubjects, List<String> denSubjects) {
+        return ScheduleEntry.builder()
+                .groupName(group)
+                .day("Среда")
+                .pairNumber(pair)
+                .numeratorSubjects(numSubjects)
+                .numeratorTeachers(List.of())
+                .numeratorRooms(List.of())
+                .denominatorSubjects(denSubjects)
+                .denominatorTeachers(List.of())
+                .denominatorRooms(List.of())
+                .build();
+    }
+
+    @Test
+    void getScheduleForGroup_shouldIgnoreOtherGroupsAndNullEmptyCells() {
+        LocalDate date = LocalDate.of(2026, 7, 29);
+        when(snapshotRepository.findByScheduleDate(date))
+                .thenReturn(Optional.of(ScheduleSnapshot.builder().id(1L).build()));
+        when(entryRepository.findBySnapshot_Id(1L)).thenReturn(List.of(
+                entry("IS1-33", 1, List.of("Математика"), List.of()),
+                entry("SA1-21", 1, List.of("Физика"), List.of()),
+                entry("IS1-33", 2, List.of(), List.of("История"))
+        ));
+        when(weekService.getWeekTypeByDate(date)).thenReturn(WeekType.DENOMINATOR);
+
+        var response = service.getScheduleForGroup("IS1-33", date).orElseThrow();
+
+        assertThat(response.weekType()).isEqualTo(WeekType.DENOMINATOR);
+        assertThat(response.pairs()).hasSize(2);
+        assertThat(response.pairs().get(0).denominator()).isNull();
+        assertThat(response.pairs().get(1).numerator()).isNull();
+        assertThat(response.pairs().get(1).denominator().getSubjects()).containsExactly("История");
+    }
+
+    @Test
+    void getScheduleForAllGroups_shouldGroupAndSortEntries() {
+        LocalDate date = LocalDate.of(2026, 7, 29);
+        when(snapshotRepository.findByScheduleDate(date))
+                .thenReturn(Optional.of(ScheduleSnapshot.builder().id(1L).build()));
+        when(entryRepository.findBySnapshot_Id(1L)).thenReturn(List.of(
+                entry("IS1-33", 2, List.of("Физика"), List.of()),
+                entry("SA1-21", 1, List.of("История"), List.of()),
+                entry("IS1-33", 1, List.of("Математика"), List.of())
+        ));
+        when(weekService.getWeekTypeByDate(date)).thenReturn(WeekType.NUMERATOR);
+
+        var result = service.getScheduleForAllGroups(date);
+
+        assertThat(result).containsOnlyKeys("IS1-33", "SA1-21");
+        assertThat(result.get("IS1-33").pairs()).extracting(p -> p.pairNumber()).containsExactly(1, 2);
+        assertThat(result.get("SA1-21").group()).isEqualTo("SA1-21");
+        assertThat(result.get("SA1-21").day()).isEqualTo("Среда");
+    }
+
+    @Test
+    void getScheduleForAllGroups_shouldReturnEmptyMap_whenSnapshotNotFound() {
+        LocalDate date = LocalDate.of(2026, 7, 29);
+        when(snapshotRepository.findByScheduleDate(date)).thenReturn(Optional.empty());
+
+        assertThat(service.getScheduleForAllGroups(date)).isEmpty();
+        verifyNoInteractions(entryRepository);
+    }
+
+    @Test
+    void getScheduleForGroup_dayOffResponseIsSunday() {
+        LocalDate sunday = LocalDate.of(2026, 10, 4);
+        when(weekService.isDayOff(sunday)).thenReturn(true);
+        when(weekService.getWeekTypeByDate(sunday)).thenReturn(WeekType.DENOMINATOR);
+
+        var response = service.getScheduleForGroup("IS1-33", sunday).orElseThrow();
+
+        assertThat(response.day()).isEqualTo("Воскресенье");
+        assertThat(response.group()).isEqualTo("IS1-33");
+        assertThat(response.weekType()).isEqualTo(WeekType.DENOMINATOR);
+    }
 }
