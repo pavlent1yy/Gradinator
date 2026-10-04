@@ -2,6 +2,8 @@ package com.pavlent1yy.gcore.controller;
 
 import com.pavlent1yy.gcore.customExceptions.ScheduleNotFoundException;
 import com.pavlent1yy.gcore.customExceptions.EmailDeliveryException;
+import com.pavlent1yy.gcore.customExceptions.GroupNotFoundException;
+import com.pavlent1yy.gcore.customExceptions.PasswordIsIncorrect;
 import com.pavlent1yy.gcore.customExceptions.InvalidVerificationTokenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidVerificationTokenException.class)
     public ResponseEntity<Map<String, String>> handleInvalidVerificationToken(
             InvalidVerificationTokenException ex
+    ) {
+        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler({PasswordIsIncorrect.class, GroupNotFoundException.class})
+    public ResponseEntity<Map<String, String>> handleBadUserRequest(
+            RuntimeException ex
     ) {
         return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
     }

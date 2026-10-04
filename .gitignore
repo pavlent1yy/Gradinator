@@ -13,6 +13,10 @@ node_modules/
 **/src/main/resources/private-info.properties
 **/.env
 
+CLAUDE.md
+gradinator-json-from-trello .json
+roadmap.md
+
 # IDE
 .idea/
 *.iml

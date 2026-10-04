@@ -29,6 +29,7 @@ public class HeartbeatService {
     private final GroupSyncService groupSyncService;
     private final HeartbeatLogRepository heartbeatLogRepository;
     private final SnapshotBuildService snapshotBuildService;
+    private final WeekService weekService;
 
     @Value("${api.start-with-heartbeat}")
     private boolean startWithHeartbeat;
@@ -64,7 +65,10 @@ public class HeartbeatService {
                     : Map.of();
 
             SnapshotBuiltStatus todayStatus;
-            if (!changesCoverToday && snapshotBuildService.existsForDate(today)) {
+            if (weekService.isDayOff(today)) {
+                todayStatus = SnapshotBuiltStatus.NO_CHANGES;
+                log.debug("🐜 {} выходной, снапшот не строим", today);
+            } else if (!changesCoverToday && snapshotBuildService.existsForDate(today)) {
                 todayStatus = SnapshotBuiltStatus.NO_CHANGES;
                 log.debug("🐜 Снапшот на {} уже есть, замены. Пропускаю пересчёт", today);
             } else {
@@ -77,7 +81,7 @@ public class HeartbeatService {
                 Snapshot: %s
                 """.formatted(todayStatus, groups.size(), today));
 
-            if (changesDate != null && changesDate.isAfter(today)) {
+            if (changesDate != null && changesDate.isAfter(today) && !weekService.isDayOff(changesDate)) {
                 var aheadStatus = snapshotBuildService.buildAndSave(changesDate, groups, allChanges.byGroup());
                 message.append("\nAhead: ").append(changesDate).append(" ").append(aheadStatus);
             }

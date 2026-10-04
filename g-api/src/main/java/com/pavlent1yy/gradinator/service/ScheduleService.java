@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -170,7 +171,9 @@ public class ScheduleService {
     }
 
     private int getScheduleDayIndex(LocalDate date) {
-        int day = date.getDayOfWeek().getValue() - 1;
-        return day == 6 ? 0 : day;
+        if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            throw new IllegalArgumentException("Воскресенье не входит в учебную неделю: " + date);
+        }
+        return date.getDayOfWeek().getValue() - 1;
     }
 }

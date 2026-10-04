@@ -2,12 +2,13 @@
 
 import { useMemo } from 'react';
 import { useScheduleContext } from './providers/ScheduleProvider';
-import { weekTypeLabel } from '../lib/date';
+import { isDayOff, weekTypeLabel } from '../lib/date';
 import { joinList, pickSlot } from '../lib/schedule';
 
 export default function Page() {
-  const { schedule, loading, error, warning } = useScheduleContext();
+  const { schedule, loading, error, warning, date, nextDate } = useScheduleContext();
 
+  const dayOff = isDayOff(date);
   const weekType = schedule?.weekType;
   const weekLabel = weekTypeLabel(weekType).toLowerCase();
 
@@ -59,9 +60,18 @@ export default function Page() {
       ))}
 
       {schedule && !loading && visiblePairs.length === 0 && !warning && !error && (
-        <div className="status-card" role="status">
-          На этой неделе ({weekLabel}) занятий нет.
-        </div>
+        dayOff ? (
+          <div className="status-card" role="status">
+            Воскресенье, пар нет.{' '}
+            <button type="button" className="btn btn-ghost" onClick={nextDate}>
+              Расписание на понедельник
+            </button>
+          </div>
+        ) : (
+          <div className="status-card" role="status">
+            На этой неделе ({weekLabel}) занятий нет.
+          </div>
+        )
       )}
     </section>
   );

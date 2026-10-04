@@ -64,6 +64,19 @@ class ScheduleControllerTest {
         verify(queryService).getScheduleForAllGroups(date);
     }
 
+    @Test
+    void getSchedule_shouldReturnOkWithEmptyMap_whenAllGroupsOnDayOff() {
+        LocalDate sunday = LocalDate.now().with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY));
+
+        when(queryService.getScheduleForAllGroups(sunday)).thenReturn(Map.of());
+        when(weekService.isDayOff(sunday)).thenReturn(true);
+
+        ResponseEntity<?> response = controller.getSchedule(null, sunday.toString());
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody()).isEqualTo(Map.of());
+    }
+
 //    @Test // TODO: FIX TEST
 //    void getSchedule_shouldReturnSchedule_whenGroupExists() {
 //        LocalDate date = LocalDate.now();

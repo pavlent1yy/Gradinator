@@ -1,0 +1,91 @@
+package com.pavlent1yy.gcore.service;
+
+import com.pavlent1yy.gcore.customExceptions.GroupNotFoundException;
+import com.pavlent1yy.gcore.customExceptions.PasswordIsIncorrect;
+import com.pavlent1yy.gcore.dto.records.ChangeGroupRequest;
+import com.pavlent1yy.gcore.dto.records.ChangePasswordRequest;
+import com.pavlent1yy.gcore.entity.User;
+import com.pavlent1yy.gcore.repository.UserRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private ScheduleService scheduleService;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @InjectMocks
+    private UserService userService;
+
+    private User user(String passwordHash) {
+        User user = new User();
+        user.setEmail("user@mail.ru");
+        user.setPasswordHash(passwordHash);
+        when(userRepository.findByEmail("user@mail.ru")).thenReturn(Optional.of(user));
+        return user;
+    }
+
+    @Test
+    void changesGroupAndDepartment() {
+        User user = user("hash");
+        when(scheduleService.getAllGroups()).thenReturn(List.of("ИС1-33", "СА1-21"));
+        when(scheduleService.getDepartmentsByGroup("ИС1-33")).thenReturn("oit");
+
+        userService.changeGroup("user@mail.ru", new ChangeGroupRequest("ИС1-33"));
+
+        assertThat(user.getGroup()).isEqualTo("ИС1-33");
+        assertThat(user.getDepartment()).isEqualTo("oit");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void rejectsUnknownGroup() {
+        user("hash");
+        when(scheduleService.getAllGroups()).thenReturn(List.of("ИС1-33"));
+
+        assertThatThrownBy(() -> userService.changeGroup("user@mail.ru", new ChangeGroupRequest("XX9-99")))
+                .isInstanceOf(GroupNotFoundException.class);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void changesPassword() {
+        User user = user("old-hash");
+        when(passwordEncoder.matches("old", "old-hash")).thenReturn(true);
+        when(passwordEncoder.encode("new")).thenReturn("new-hash");
+
+        userService.changePassword("user@mail.ru", new ChangePasswordRequest("old", "new"));
+
+        assertThat(user.getPasswordHash()).isEqualTo("new-hash");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void rejectsPasswordChangeForOAuthUser() {
+        user(null);
+
+        assertThatThrownBy(() -> userService.changePassword("user@mail.ru", new ChangePasswordRequest("x", "new")))
+                .isInstanceOf(PasswordIsIncorrect.class);
+        verifyNoInteractions(passwordEncoder);
+        verify(userRepository, never()).save(any());
+    }
+}

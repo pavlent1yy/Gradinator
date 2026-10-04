@@ -38,4 +38,8 @@ public class WeekService {
                 : DENOMINATOR;
     }
 
+    public boolean isDayOff(LocalDate date) {
+        return date.getDayOfWeek() == DayOfWeek.SUNDAY;
+    }
+
 }

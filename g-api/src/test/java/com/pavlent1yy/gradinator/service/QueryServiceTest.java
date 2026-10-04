@@ -35,6 +35,40 @@ class QueryServiceTest {
 
 
     @Test
+    void getScheduleForGroup_shouldReturnEmptyDay_whenDayOff() {
+        LocalDate sunday = LocalDate.of(2026, 10, 4);
+
+        when(weekService.isDayOff(sunday)).thenReturn(true);
+        when(weekService.getWeekTypeByDate(sunday)).thenReturn(WeekType.NUMERATOR);
+
+        var result = service.getScheduleForGroup("IS1-33", sunday);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().date()).isEqualTo(sunday);
+        assertThat(result.get().pairs()).isEmpty();
+        verifyNoInteractions(snapshotRepository, entryRepository);
+    }
+
+    @Test
+    void getScheduleForAllGroups_shouldReturnEmptyMap_whenDayOff() {
+        LocalDate sunday = LocalDate.of(2026, 10, 4);
+
+        when(weekService.isDayOff(sunday)).thenReturn(true);
+
+        assertThat(service.getScheduleForAllGroups(sunday)).isEmpty();
+        verifyNoInteractions(snapshotRepository, entryRepository);
+    }
+
+    @Test
+    void weekService_shouldTreatOnlySundayAsDayOff() {
+        WeekService real = new WeekService();
+
+        assertThat(real.isDayOff(LocalDate.of(2026, 10, 4))).isTrue();
+        assertThat(real.isDayOff(LocalDate.of(2026, 10, 3))).isFalse();
+        assertThat(real.isDayOff(LocalDate.of(2026, 10, 5))).isFalse();
+    }
+
+    @Test
     void getScheduleForGroup_shouldReturnEmpty_whenSnapshotNotFound() {
         LocalDate date = LocalDate.of(2026, 7, 29);
 

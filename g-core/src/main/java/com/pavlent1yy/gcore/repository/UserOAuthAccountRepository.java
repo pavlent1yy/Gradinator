@@ -13,4 +13,6 @@ public interface UserOAuthAccountRepository
             OAuthProvider provider,
             String providerUserId
     );
+
+    boolean existsByProviderAndProviderUserId(OAuthProvider provider, String providerUserId);
 }

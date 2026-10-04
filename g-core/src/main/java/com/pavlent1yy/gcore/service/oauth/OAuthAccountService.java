@@ -7,11 +7,12 @@ import com.pavlent1yy.gcore.enums.Role;
 import com.pavlent1yy.gcore.repository.UserOAuthAccountRepository;
 import com.pavlent1yy.gcore.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.Objects;
 
 @Service
@@ -71,36 +72,44 @@ public class OAuthAccountService {
                         providerUserId
                 )
                 .map(UserOAuthAccount::getUser)
-                .orElseGet(() -> createUser(
+                .orElseGet(() -> createOAuthUser(
                         provider,
                         providerUserId,
                         email
                 ));
     }
 
-    private User createUser(
+    private User createOAuthUser(
             OAuthProvider provider,
             String providerUserId,
             String email
     ) {
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+
         User user = userRepository
-                .findByEmail(email)
+                .findByEmail(normalizedEmail)
                 .orElseGet(() -> {
                     User newUser = new User();
-                    newUser.setEmail(email);
+
+                    newUser.setEmail(normalizedEmail);
                     newUser.setPasswordHash(null);
                     newUser.setRole(Role.STUDENT);
                     newUser.setEnabled(true);
+                    newUser.setRegisteredAt(OffsetDateTime.now());
 
                     return userRepository.save(newUser);
                 });
 
-        UserOAuthAccount account = new UserOAuthAccount();
-        account.setUser(user);
-        account.setProvider(provider);
-        account.setProviderUserId(providerUserId);
+        if (!oauthAccountRepository
+                .existsByProviderAndProviderUserId(provider, providerUserId)) {
 
-        oauthAccountRepository.save(account);
+            UserOAuthAccount account = new UserOAuthAccount();
+            account.setUser(user);
+            account.setProvider(provider);
+            account.setProviderUserId(providerUserId);
+
+            oauthAccountRepository.save(account);
+        }
 
         return user;
     }

@@ -165,7 +165,7 @@ GET /oauth2/authorization/google
 
 ## Пользовательские поинты
 
-### `PUT` `/user/change-password`
+### `PUT` `/core/user/change-password`
 
 <i>Изменяет пароль текущего пользователя</i>
 
@@ -180,11 +180,11 @@ GET /oauth2/authorization/google
 }
 ```
 
-Пример ответа: `200 OK`
+Пример ответа: `200 OK`. Неверный старый пароль или аккаунт без пароля (вход через OAuth): `400 {"error": "..."}`
 
 ---
 
-### `PUT` `/user/change-group`
+### `PUT` `/core/user/change-group`
 
 <i>Изменяет учебную группу текущего пользователя</i>
 
@@ -198,7 +198,7 @@ GET /oauth2/authorization/google
 }
 ```
 
-Пример ответа: `200 OK`
+Пример ответа: `200 OK`. Группы нет в G-API: `400 {"error": "..."}`
 
 ---
 

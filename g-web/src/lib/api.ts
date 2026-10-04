@@ -152,6 +152,36 @@ export async function changeGroup(
     }
 }
 
+export async function changePassword(
+    oldPassword: string,
+    newPassword: string
+): Promise<void> {
+
+    const res = await fetch(
+        `${API_BASE}/user/change-password`,
+        {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                oldPassword,
+                newPassword
+            })
+        }
+    );
+
+    if (!res.ok) {
+        throw new Error(
+            await readErrorMessage(
+                res,
+                'Не удалось изменить пароль'
+            )
+        );
+    }
+}
+
 export async function fetchSchedule(
     group: string,
     dateIso: string,

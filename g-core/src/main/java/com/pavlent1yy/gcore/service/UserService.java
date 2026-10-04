@@ -1,5 +1,6 @@
 package com.pavlent1yy.gcore.service;
 
+import com.pavlent1yy.gcore.customExceptions.GroupNotFoundException;
 import com.pavlent1yy.gcore.customExceptions.PasswordIsIncorrect;
 import com.pavlent1yy.gcore.dto.records.ChangeGroupRequest;
 import com.pavlent1yy.gcore.dto.records.ChangePasswordRequest;
@@ -40,6 +41,9 @@ public class UserService {
 
     public void changePassword(String email, ChangePasswordRequest passwordRequest){
         User user = getUserByEmail(email);
+        if (user.getPasswordHash() == null) {
+            throw new PasswordIsIncorrect("У аккаунта нет пароля: вход выполнен через Google/GitHub");
+        }
         if (passwordEncoder.matches(passwordRequest.oldPassword(), user.getPasswordHash())){
             user.setPasswordHash(passwordEncoder.encode(passwordRequest.newPassword()));
             userRepository.save(user);
@@ -51,12 +55,11 @@ public class UserService {
     public void changeGroup(String email, ChangeGroupRequest changeGroupRequest){
         User user = getUserByEmail(email);
         String newGroup = changeGroupRequest.newGroup();
+        if (newGroup == null || !scheduleService.getAllGroups().contains(newGroup)) {
+            throw new GroupNotFoundException("Группа не найдена: " + newGroup);
+        }
         user.setGroup(newGroup);
         user.setDepartment(scheduleService.getDepartmentsByGroup(newGroup));
         userRepository.save(user);
-    }
-
-    public void defineDepartmentByGroup(String group){
-
     }
 }

@@ -30,6 +30,10 @@ public class QueryService {
     )
     @Transactional(readOnly = true)
     public Optional<DayScheduleResponse> getScheduleForGroup(String group, LocalDate date) {
+        if (weekService.isDayOff(date)) {
+            return Optional.of(dayOffResponse(group, date));
+        }
+
         Optional<ScheduleSnapshot> snapshot = snapshotRepository.findByScheduleDate(date);
         if (snapshot.isEmpty()) return Optional.empty();
 
@@ -45,6 +49,8 @@ public class QueryService {
 
     @Transactional(readOnly = true)
     public Map<String, DayScheduleResponse> getScheduleForAllGroups(LocalDate date) {
+        if (weekService.isDayOff(date)) return Map.of();
+
         Optional<ScheduleSnapshot> snapshot = snapshotRepository.findByScheduleDate(date);
         if (snapshot.isEmpty()) return Map.of();
 
@@ -72,6 +78,11 @@ public class QueryService {
                 .toList();
 
         return new DayScheduleResponse(group, entries.get(0).getDay(), weekService.getWeekTypeByDate(date), date, pairs);
+    }
+
+    // Выходной: пустой день, решение что показать остаётся за клиентом
+    private DayScheduleResponse dayOffResponse(String group, LocalDate date) {
+        return new DayScheduleResponse(group, "Воскресенье", weekService.getWeekTypeByDate(date), date, List.of());
     }
 
     private CellData toCellData(List<String> subjects, List<String> teachers, List<String> rooms) {

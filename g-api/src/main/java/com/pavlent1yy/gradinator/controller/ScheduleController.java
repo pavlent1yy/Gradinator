@@ -79,7 +79,7 @@ public class ScheduleController {
             Map<String, DayScheduleResponse> all =
                     queryService.getScheduleForAllGroups(date);
 
-            if (all.isEmpty()) {
+            if (all.isEmpty() && !weekService.isDayOff(date)) {
                 return ResponseEntity.status(404)
                         .body(Map.of(
                                 "error",

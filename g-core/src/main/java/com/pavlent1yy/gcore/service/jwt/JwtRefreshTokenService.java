@@ -1,6 +1,5 @@
 package com.pavlent1yy.gcore.service.jwt;
 
-import com.pavlent1yy.gcore.customExceptions.InvalidRefreshTokenException;
 import com.pavlent1yy.gcore.entity.RefreshSession;
 import com.pavlent1yy.gcore.entity.User;
 import com.pavlent1yy.gcore.repository.RefreshSessionRepository;

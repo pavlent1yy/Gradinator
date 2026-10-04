@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '../providers/AuthProvider';
+import { changePassword } from '../../lib/api';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -49,24 +50,7 @@ export default function ChangePasswordPage() {
     setMessage('');
 
     try {
-      const response = await fetch(
-        'http://localhost:9091/user/change-password',
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            // Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            oldPassword,
-            newPassword,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Не удалось изменить пароль.');
-      }
+      await changePassword(oldPassword, newPassword);
 
       setOldPassword('');
       setNewPassword('');

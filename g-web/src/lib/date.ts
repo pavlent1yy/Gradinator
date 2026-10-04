@@ -16,6 +16,12 @@ export function parseIsoDate(iso?: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/** Воскресенье: g-api отдаёт пустой день, что показывать решает UI. */
+export function isDayOff(iso?: string) {
+  const d = parseIsoDate(iso);
+  return d ? d.getDay() === 0 : false;
+}
+
 export function formatDayName(iso?: string, fallback?: string) {
   const d = parseIsoDate(iso);
   if (d) return RU_DAYS[d.getDay()];
