@@ -16,6 +16,7 @@ node_modules/
 CLAUDE.md
 gradinator-json-from-trello .json
 roadmap.md
+.claude/local
 
 # IDE
 .idea/
