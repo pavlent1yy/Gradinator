@@ -90,6 +90,17 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           build-args: ${{ matrix.args }}
+          tags: gradinator-${{ matrix.image }}:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+          outputs: type=docker,dest=/tmp/${{ matrix.image }}.tar
           push: false
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      - name: Compress deployment image
+        run: gzip -1 /tmp/${{ matrix.image }}.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy-image-${{ matrix.image }}
+          path: /tmp/${{ matrix.image }}.tar.gz
+          compression-level: 0
+          retention-days: 2

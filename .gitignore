@@ -53,3 +53,5 @@ Thumbs.db
 # Local / generated project data
 postgres/
 scheduleFiles/
+.deploy.lock
+.deployed-revision

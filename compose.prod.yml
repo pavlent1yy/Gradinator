@@ -22,6 +22,7 @@ services:
       - backend
 
   g-api:
+    image: gradinator-g-api:${DEPLOY_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -46,6 +47,7 @@ services:
       - backend
 
   g-core:
+    image: gradinator-g-core:${DEPLOY_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile
@@ -54,6 +56,8 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: ${G_CORE_PROFILES:-prod}
+      SERVER_SERVLET_SESSION_COOKIE_SECURE: "true"
+      SERVER_SERVLET_SESSION_COOKIE_SAME_SITE: lax
       TZ: Europe/Moscow
       JAVA_TOOL_OPTIONS: -Duser.timezone=Europe/Moscow
       DB_USERNAME: ${POSTGRES_USER}
@@ -72,10 +76,10 @@ services:
       MAIL_FROM: ${MAIL_FROM:-gradinator@localhost}
       MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
       MAIL_STARTTLS: ${MAIL_STARTTLS:-true}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
       YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
       VK_CLIENT_ID: ${VK_CLIENT_ID:-}
@@ -90,11 +94,15 @@ services:
       - backend
 
   g-web:
+    image: gradinator-g-web:${DEPLOY_IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: Dockerfile.web
       args:
         G_CORE_URL: http://g-core:9091
+        NEXT_PUBLIC_OAUTH_ENABLED: ${NEXT_PUBLIC_OAUTH_ENABLED:-true}
+        NEXT_PUBLIC_VK_OAUTH_ENABLED: ${NEXT_PUBLIC_VK_OAUTH_ENABLED:-false}
+        NEXT_PUBLIC_YANDEX_OAUTH_ENABLED: ${NEXT_PUBLIC_YANDEX_OAUTH_ENABLED:-false}
     restart: unless-stopped
     environment:
       TZ: Europe/Moscow

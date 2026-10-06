@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { useAuthContext } from '../providers/AuthProvider';
 import * as api from '../../lib/api';
 
-const RU_OAUTH_ENABLED = false;
+const YANDEX_OAUTH_ENABLED = process.env.NEXT_PUBLIC_YANDEX_OAUTH_ENABLED === 'true';
+const VK_OAUTH_ENABLED = process.env.NEXT_PUBLIC_VK_OAUTH_ENABLED === 'true';
+const OAUTH_ENABLED = process.env.NEXT_PUBLIC_OAUTH_ENABLED !== 'false';
 
-const OAUTH_ERROR_MESSAGE = 'Не удалось войти через Google/GitHub. Попробуй ещё раз.';
+const OAUTH_ERROR_MESSAGE = 'Не удалось войти через выбранный сервис. Попробуй ещё раз.';
 
 export default function LoginPage() {
   return (
@@ -111,7 +113,7 @@ function LoginForm() {
           </button>
         </div>
 
-        <div className="auth-actions auth-actions--oauth">
+        {OAUTH_ENABLED && <div className="auth-actions auth-actions--oauth">
           {/*
             Полный редирект (не Link): запускает OAuth2-рукопожатие в g-core.
             После успеха g-core сам перенаправит на /profile.
@@ -132,8 +134,7 @@ function LoginForm() {
             </svg>
             GitHub
           </a>
-          {RU_OAUTH_ENABLED && (
-            <>
+          {YANDEX_OAUTH_ENABLED && (
               <a href="/oauth2/authorization/yandex" className="btn btn-oauth">
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="12" cy="12" r="12" fill="#FC3F1D"/>
@@ -141,6 +142,8 @@ function LoginForm() {
                 </svg>
                 Яндекс
               </a>
+          )}
+          {VK_OAUTH_ENABLED && (
               <a href="/oauth2/authorization/vk" className="btn btn-oauth">
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                   <rect width="24" height="24" rx="6" fill="#0077FF"/>
@@ -148,14 +151,13 @@ function LoginForm() {
                 </svg>
                 VK
               </a>
-            </>
           )}
-        </div>
+        </div>}
 
-        <p className="auth-legal">
-          Входя через Google или GitHub впервые, ты принимаешь <Link href="/terms">соглашение</Link> и даёшь{' '}
+        {OAUTH_ENABLED && <p className="auth-legal">
+          Входя через внешнюю учётную запись впервые, ты принимаешь <Link href="/terms">соглашение</Link> и даёшь{' '}
           <Link href="/consent">согласие на обработку данных</Link>.
-        </p>
+        </p>}
 
         <p className="auth-switch">
           Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>

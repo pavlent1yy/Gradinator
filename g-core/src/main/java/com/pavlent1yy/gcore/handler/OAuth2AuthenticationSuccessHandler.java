@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
@@ -31,7 +32,7 @@ public class OAuth2AuthenticationSuccessHandler
     private final OAuthAccountService oauthAccountService;
     private final TokenService tokenService;
     private final AuthCookieService authCookieService;
-    private final OAuth2AuthorizedClientService authorizedClientService;
+    private final ObjectProvider<OAuth2AuthorizedClientService> authorizedClientService;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -45,7 +46,7 @@ public class OAuth2AuthenticationSuccessHandler
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User oauthUser = oauthToken.getPrincipal();
         String registrationId = oauthToken.getAuthorizedClientRegistrationId();
-        OAuth2AuthorizedClient client = authorizedClientService.loadAuthorizedClient(registrationId, oauthToken.getName());
+        OAuth2AuthorizedClient client = authorizedClientService.getObject().loadAuthorizedClient(registrationId, oauthToken.getName());
 
         String accessToken = client.getAccessToken().getTokenValue();
 

@@ -9,6 +9,7 @@ import com.pavlent1yy.gcore.service.jwt.JwtAuthenticationFilter;
 import com.pavlent1yy.gcore.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,6 +22,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import jakarta.servlet.DispatcherType;
@@ -41,9 +43,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+                                                   JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                   ObjectProvider<ClientRegistrationRepository> clientRegistrations) throws Exception {
 
-        return http
+        http
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session
@@ -73,8 +76,10 @@ public class SecurityConfig {
                         .permitAll()
                         .anyRequest()
                         .authenticated()
-                )
-                .oauth2Login(oauth2 -> oauth2
+                );
+
+        if (clientRegistrations.getIfAvailable() != null) {
+            http.oauth2Login(oauth2 -> oauth2
                         .tokenEndpoint(token -> token
                                 .accessTokenResponseClient(authorizationCodeTokenResponseClient())
                         )
@@ -83,8 +88,10 @@ public class SecurityConfig {
                         )
                         .successHandler(oauth2AuthenticationSuccessHandler)
                         .failureUrl(frontendUrl + "/login?error=oauth")
-                )
-                .addFilterBefore(
+                );
+        }
+
+        return http.addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 )
