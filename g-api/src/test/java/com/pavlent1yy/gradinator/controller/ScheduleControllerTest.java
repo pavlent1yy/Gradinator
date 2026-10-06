@@ -197,4 +197,34 @@ class ScheduleControllerTest {
         assertThat(controller.getCurrentWeekType().getBody())
                 .isEqualTo(Map.of("weekType", WeekType.DENOMINATOR, "label", "Знаменатель"));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void week_shouldReturnMondayToSaturdayWithMissingDaysAsNull() {
+        LocalDate wednesday = LocalDate.now().with(java.time.DayOfWeek.WEDNESDAY);
+        LocalDate monday = wednesday.minusDays(2);
+        DayScheduleResponse mondaySchedule = new DayScheduleResponse("ABC-1", "Понедельник", WeekType.NUMERATOR, monday, List.of());
+
+        when(queryService.getScheduleForGroup(org.mockito.ArgumentMatchers.eq("ABC-1"), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(Optional.empty());
+        when(queryService.getScheduleForGroup("ABC-1", monday)).thenReturn(Optional.of(mondaySchedule));
+
+        ResponseEntity<?> response = controller.getWeek(" ABC-1 ", wednesday.toString());
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        List<com.pavlent1yy.gradinator.dto.WeekDayResponse> week =
+                (List<com.pavlent1yy.gradinator.dto.WeekDayResponse>) response.getBody();
+        assertThat(week).hasSize(6);
+        assertThat(week.get(0).date()).isEqualTo(monday);
+        assertThat(week.get(0).schedule()).isSameAs(mondaySchedule);
+        assertThat(week.get(5).date()).isEqualTo(monday.plusDays(5));
+        assertThat(week.get(5).schedule()).isNull();
+    }
+
+    @Test
+    void week_shouldRejectBadInput() {
+        assertThat(controller.getWeek("ABC-1", "not-a-date").getStatusCode().value()).isEqualTo(400);
+        assertThat(controller.getWeek("   ", null).getStatusCode().value()).isEqualTo(400);
+        assertThat(controller.getWeek("X".repeat(31), null).getStatusCode().value()).isEqualTo(400);
+    }
 }

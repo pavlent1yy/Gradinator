@@ -33,6 +33,11 @@ function addDays(iso: string, delta: number) {
   return toIsoDate(d);
 }
 
+function stepStudyDay(iso: string, delta: number) {
+  const next = addDays(iso, delta);
+  return new Date(`${next}T00:00:00`).getDay() === 0 ? addDays(next, delta) : next;
+}
+
 type UseScheduleOptions = {
   /**
    * Если false — список групп грузится, но само расписание не запрашивается.
@@ -196,8 +201,8 @@ export default function useSchedule(
   const setDepartment = useCallback((d: string) => setDepartmentState(d), []);
 
   const setDate = useCallback((iso: string) => setDateState(iso), []);
-  const prevDate = useCallback(() => setDateState((d) => addDays(d, -1)), []);
-  const nextDate = useCallback(() => setDateState((d) => addDays(d, 1)), []);
+  const prevDate = useCallback(() => setDateState((d) => stepStudyDay(d, -1)), []);
+  const nextDate = useCallback(() => setDateState((d) => stepStudyDay(d, 1)), []);
   const goToday = useCallback(() => setDateState(toIsoDate(new Date())), []);
 
   const refresh = useCallback(() => load(group, date), [load, group, date]);

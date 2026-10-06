@@ -3,6 +3,7 @@ package com.pavlent1yy.gcore.controller;
 import com.pavlent1yy.gcore.dto.records.FreeRoomsResponse;
 import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
 import com.pavlent1yy.gcore.dto.records.SearchHit;
+import com.pavlent1yy.gcore.dto.records.WeekDayResponse;
 import com.pavlent1yy.gcore.enums.SearchType;
 import com.pavlent1yy.gcore.service.ScheduleService;
 import com.pavlent1yy.gcore.service.SearchService;
@@ -27,6 +28,11 @@ public class ScheduleController {
     @GetMapping
     public ScheduleResponse getSchedule(@RequestParam String group, @RequestParam LocalDate date) {
         return scheduleService.getSchedule(group, date);
+    }
+
+    @GetMapping("/week")
+    public List<WeekDayResponse> getWeek(@RequestParam String group, @RequestParam LocalDate date) {
+        return scheduleService.getWeek(group, date);
     }
 
     @GetMapping("/groups")

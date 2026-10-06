@@ -5,6 +5,7 @@ import { useScheduleContext } from './providers/ScheduleProvider';
 import { isDayOff, weekTypeLabel } from '../lib/date';
 import { joinList, pickSlot } from '../lib/schedule';
 import PageToolbar from '../components/PageToolbar';
+import SubjectText from '../components/SubjectText';
 
 export default function Page() {
   const { schedule, loading, error, warning, date, nextDate } = useScheduleContext();
@@ -50,7 +51,7 @@ export default function Page() {
             <div className="pair-body">
               <div className="entry">
                 <h3 className="subject">
-                  {joinList(slot?.subjects, 'Предмет')}
+                  <SubjectText subjects={slot?.subjects} />
                   {pair.hasChanges && <span className="changed-stamp">замена</span>}
                 </h3>
                 <div className="meta-row-lesson">

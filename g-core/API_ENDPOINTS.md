@@ -233,7 +233,7 @@ G-Core предоставляет клиентский доступ к API ра�
 | Метод | Путь | Что делает |
 |---|---|---|
 | `GET` | `/core/absences?from=YYYY-MM-DD&to=YYYY-MM-DD` | список отметок за период (не больше 400 дней) |
-| `PUT` | `/core/absences` | отметить пару: `{"date","pairNumber":1..8,"type":"MISSED"\|"LATE","subject"?}`; повторная отметка меняет тип |
+| `PUT` | `/core/absences` | отметить пару: `{"date","pairNumber":0..6,"type":"MISSED"\|"LATE","subject"?}`; повторная отметка меняет тип |
 | `DELETE` | `/core/absences?date=&pairNumber=` | снять отметку, `204` |
 | `POST` | `/core/absences/day` | `{"date"}` — отметить пропуском все пары дня по расписанию группы пользователя; `400`, если группы нет или пар нет |
 | `DELETE` | `/core/absences/day?date=` | очистить день, `204` |
@@ -259,3 +259,4 @@ G-Core предоставляет клиентский доступ к API ра�
 | `GET` | `/core/schedule/subjects` | предметы |
 | `GET` | `/core/schedule/rooms` | аудитории (`А203,М106` разбивается на две) |
 | `GET` | `/core/schedule/current-weektype` | `{label, weekType}` из g-api |
+| `GET` | `/core/schedule/week?group=&date=` | неделя пн–сб одним запросом, прокси к g-api `/api/schedule/week`: `[{date, schedule \| null}]` |

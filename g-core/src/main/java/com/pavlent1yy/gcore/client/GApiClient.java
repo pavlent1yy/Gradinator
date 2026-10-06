@@ -2,6 +2,7 @@ package com.pavlent1yy.gcore.client;
 
 import com.pavlent1yy.gcore.customExceptions.ScheduleNotFoundException;
 import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
+import com.pavlent1yy.gcore.dto.records.WeekDayResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
@@ -88,6 +89,19 @@ public class GApiClient {
         } catch (HttpClientErrorException.NotFound e) {
             return Map.of();
         }
+    }
+
+    public List<WeekDayResponse> getWeek(String group, LocalDate date) {
+        List<WeekDayResponse> week = gApiRestClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/schedule/week")
+                        .queryParam("group", group)
+                        .queryParam("date", date)
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        return week == null ? List.of() : week;
     }
 
     public List<String> getTeachers() {

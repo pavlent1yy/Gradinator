@@ -21,6 +21,7 @@ type AuthContextValue = {
         password: string
     ) => Promise<boolean>;
     logout: () => Promise<void>;
+    refreshUser: () => Promise<void>;
     clearAuthError: () => void;
 };
 
@@ -132,6 +133,10 @@ export function AuthProvider({
 
     }, []);
 
+    const refreshUser = useCallback(async () => {
+        setUser(await api.fetchMe());
+    }, []);
+
     const clearAuthError = useCallback(
         () => setAuthError(null),
         []
@@ -145,6 +150,7 @@ export function AuthProvider({
             authError,
             login,
             logout,
+            refreshUser,
             clearAuthError
         }),
         [
@@ -154,6 +160,7 @@ export function AuthProvider({
             authError,
             login,
             logout,
+            refreshUser,
             clearAuthError
         ]
     );

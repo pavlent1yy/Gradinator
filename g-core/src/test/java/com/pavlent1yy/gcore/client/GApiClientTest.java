@@ -102,4 +102,20 @@ class GApiClientTest {
 
         assertThat(client.getDepartmentsByGroup("ИС1-33")).isEqualTo("oit");
     }
+
+    @Test
+    void getsWeekInOneRequest() {
+        server.expect(requestTo(BASE + "/api/schedule/week?group=%D0%98%D0%A11-33&date=2026-10-07"))
+                .andRespond(withSuccess("""
+                        [{"date":"2026-10-05","schedule":{"group":"ИС1-33","day":"Понедельник","weekType":"NUMERATOR","date":"2026-10-05","pairs":[]}},
+                         {"date":"2026-10-06","schedule":null}]
+                        """, MediaType.APPLICATION_JSON));
+
+        var week = client.getWeek("ИС1-33", LocalDate.of(2026, 10, 7));
+
+        assertThat(week).hasSize(2);
+        assertThat(week.get(0).schedule().group()).isEqualTo("ИС1-33");
+        assertThat(week.get(1).schedule()).isNull();
+        server.verify();
+    }
 }

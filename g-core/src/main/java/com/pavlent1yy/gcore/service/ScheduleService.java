@@ -2,6 +2,7 @@ package com.pavlent1yy.gcore.service;
 
 import com.pavlent1yy.gcore.client.GApiClient;
 import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
+import com.pavlent1yy.gcore.dto.records.WeekDayResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,10 @@ public class ScheduleService {
 
     public ScheduleResponse getSchedule(String group, LocalDate date) {
         return gApiClient.getSchedule(group, date);
+    }
+
+    public List<WeekDayResponse> getWeek(String group, LocalDate date) {
+        return gApiClient.getWeek(group, date);
     }
 
     public List<String> getAllGroups(){

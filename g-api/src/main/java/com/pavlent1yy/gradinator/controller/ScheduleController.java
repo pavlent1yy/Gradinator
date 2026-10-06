@@ -1,6 +1,7 @@
 package com.pavlent1yy.gradinator.controller;
 
 import com.pavlent1yy.gradinator.dto.DayScheduleResponse;
+import com.pavlent1yy.gradinator.dto.WeekDayResponse;
 import com.pavlent1yy.gradinator.enums.WeekType;
 import com.pavlent1yy.gradinator.service.QueryService;
 import com.pavlent1yy.gradinator.service.WeekService;
@@ -8,9 +9,13 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 @RestController
 @RequestMapping("/api/schedule")
@@ -22,6 +27,7 @@ public class ScheduleController {
     private static final int MAX_GROUP_LENGTH = 30;
     private static final long HISTORY_DAYS = 90;
     private static final long FUTURE_DAYS = 30;
+    private static final int STUDY_DAYS = 6;
 
     @GetMapping
     public ResponseEntity<?> getSchedule(
@@ -49,6 +55,39 @@ public class ScheduleController {
         }
 
         return respondForDate(group, target);
+    }
+
+    @GetMapping("/week")
+    public ResponseEntity<?> getWeek(
+            @RequestParam String group,
+            @RequestParam(required = false) String date) {
+        LocalDate target;
+        try {
+            target = date == null ? LocalDate.now() : resolveDate(date);
+        } catch (DateTimeParseException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Некорректная дата, ожидается yyyy-MM-dd"));
+        }
+
+        String trimmedGroup = group.trim();
+        if (trimmedGroup.isEmpty() || trimmedGroup.length() > MAX_GROUP_LENGTH) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Некорректное название группы"));
+        }
+
+        LocalDate monday = target.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        List<WeekDayResponse> week = IntStream.range(0, STUDY_DAYS)
+                .mapToObj(monday::plusDays)
+                .map(day -> new WeekDayResponse(
+                        day,
+                        isDateAllowed(day)
+                                ? queryService.getScheduleForGroup(trimmedGroup, day).orElse(null)
+                                : null
+                ))
+                .toList();
+
+        return ResponseEntity.ok(week);
     }
 
     @GetMapping("/today")

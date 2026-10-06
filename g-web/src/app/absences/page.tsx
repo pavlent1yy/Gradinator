@@ -11,8 +11,9 @@ import { formatDateLong, formatDateShort, isDayOff, toIsoDate } from '../../lib/
 import { joinList, pickSlot } from '../../lib/schedule';
 import type { Schedule } from '../../types/schedule';
 import PageToolbar from '../../components/PageToolbar';
+import { stripAlert } from '../../components/SubjectText';
 
-const FALLBACK_PAIRS = [1, 2, 3, 4, 5, 6];
+const FALLBACK_PAIRS = [0, 1, 2, 3, 4, 5, 6];
 
 const PERIODS: { key: keyof AbsenceStats; label: string }[] = [
   { key: 'week', label: 'Неделя' },
@@ -103,7 +104,7 @@ export default function AbsencesPage() {
 
     schedule?.pairs?.forEach((pair) => {
       const slot = pickSlot(pair, schedule.weekType);
-      if (slot) byNumber.set(pair.pairNumber, { pairNumber: pair.pairNumber, subject: joinList(slot.subjects, '') || null });
+      if (slot) byNumber.set(pair.pairNumber, { pairNumber: pair.pairNumber, subject: joinList(slot.subjects.map((t) => stripAlert(t).text), '') || null });
     });
 
     if (!schedule && scheduleMissing && !dayOff) {

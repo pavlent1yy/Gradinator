@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { formatDateShort, toIsoDate } from '../lib/date';
+import MiniCalendar from './MiniCalendar';
 
 type Props = {
   dateIso: string;
@@ -13,12 +14,7 @@ type Props = {
 
 export default function DateNav({ dateIso, onPrev, onNext, onPick, onToday }: Props) {
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(dateIso);
   const rootRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    setValue(dateIso);
-  }, [dateIso]);
 
   useEffect(() => {
     if (!open) return;
@@ -40,14 +36,8 @@ export default function DateNav({ dateIso, onPrev, onNext, onPick, onToday }: Pr
     };
   }, [open]);
 
-  function onOk() {
-    if (!value) return;
-    onPick(value);
-    setOpen(false);
-  }
-
-  function onCancel() {
-    setValue(dateIso);
+  function pick(iso: string) {
+    onPick(iso);
     setOpen(false);
   }
 
@@ -94,17 +84,7 @@ export default function DateNav({ dateIso, onPrev, onNext, onPick, onToday }: Pr
 
       {open && (
         <div className="date-picker-popover" role="dialog" aria-label="Выбор даты">
-          <input
-            type="date"
-            className="date-picker-input"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            aria-label="Выбери дату"
-          />
-          <div className="date-picker-actions">
-            <button type="button" className="date-picker-btn" onClick={onCancel}>Отмена</button>
-            <button type="button" className="date-picker-btn primary" onClick={onOk}>ОК</button>
-          </div>
+          <MiniCalendar value={dateIso} onPick={pick} />
         </div>
       )}
     </div>

@@ -67,10 +67,15 @@ export default function PageToolbar({ showGroupPicker = true, showDate = true, s
           <DateNav dateIso={date} onPrev={prevDate} onNext={nextDate} onPick={setDate} onToday={goToday} />
         )}
         {showRefresh && (
+          <span className="updated-stamp mono" aria-live="polite">
+            {updatedAt ? `обновлено ${updatedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : 'обновлено —'}
+          </span>
+        )}
+        {showRefresh && (
           <button
             className={`icon-btn${loading ? ' btn-spin' : ''}`}
             aria-label="Обновить расписание"
-            title={updatedAt ? `Информация от ${updatedAt.toLocaleString('ru-RU')}` : 'Обновить'}
+            title="Обновить"
             onClick={refresh}
             aria-busy={loading}
             type="button"

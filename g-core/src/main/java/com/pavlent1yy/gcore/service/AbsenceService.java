@@ -29,7 +29,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AbsenceService {
 
-    static final int MAX_PAIR_NUMBER = 8;
+    static final int MIN_PAIR_NUMBER = 0;
+    static final int MAX_PAIR_NUMBER = 6;
     private static final int MAX_RANGE_DAYS = 400;
     private static final int MAX_SUBJECT_LENGTH = 255;
 
@@ -79,7 +80,7 @@ public class AbsenceService {
         List<PairResponse> pairs = schedule == null || schedule.pairs() == null ? List.of() : schedule.pairs();
 
         List<AbsenceResponse> marked = pairs.stream()
-                .filter(pair -> pair.pairNumber() >= 1 && pair.pairNumber() <= MAX_PAIR_NUMBER)
+                .filter(pair -> pair.pairNumber() >= MIN_PAIR_NUMBER && pair.pairNumber() <= MAX_PAIR_NUMBER)
                 .sorted(Comparator.comparingInt(PairResponse::pairNumber))
                 .filter(pair -> ScheduleCells.activeCell(pair, schedule.weekType()) != null)
                 .map(pair -> upsert(
@@ -200,8 +201,8 @@ public class AbsenceService {
     }
 
     private static void validatePairNumber(Integer pairNumber) {
-        if (pairNumber == null || pairNumber < 1 || pairNumber > MAX_PAIR_NUMBER) {
-            throw new InvalidAbsenceException("Номер пары должен быть от 1 до " + MAX_PAIR_NUMBER);
+        if (pairNumber == null || pairNumber < MIN_PAIR_NUMBER || pairNumber > MAX_PAIR_NUMBER) {
+            throw new InvalidAbsenceException("Номер пары должен быть от " + MIN_PAIR_NUMBER + " до " + MAX_PAIR_NUMBER);
         }
     }
 

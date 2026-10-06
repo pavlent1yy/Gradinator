@@ -85,6 +85,12 @@ class AbsenceServiceTest {
     }
 
     @Test
+    void zeroPairCanBeMarked() {
+        assertThat(absenceService.mark(EMAIL, new AbsenceRequest(DAY, 0, AbsenceType.LATE, null)).pairNumber()).isZero();
+        assertThat(absenceService.mark(EMAIL, new AbsenceRequest(DAY, 6, AbsenceType.MISSED, null)).pairNumber()).isEqualTo(6);
+    }
+
+    @Test
     void lateCountsAsOneHour() {
         assertThat(absenceService.mark(EMAIL, new AbsenceRequest(DAY, 1, AbsenceType.LATE, null)).hours()).isEqualTo(1);
     }
@@ -104,9 +110,9 @@ class AbsenceServiceTest {
 
     @Test
     void rejectsInvalidInput() {
-        assertThatThrownBy(() -> absenceService.mark(EMAIL, new AbsenceRequest(DAY, 0, AbsenceType.MISSED, null)))
+        assertThatThrownBy(() -> absenceService.mark(EMAIL, new AbsenceRequest(DAY, -1, AbsenceType.MISSED, null)))
                 .isInstanceOf(InvalidAbsenceException.class);
-        assertThatThrownBy(() -> absenceService.mark(EMAIL, new AbsenceRequest(DAY, 9, AbsenceType.MISSED, null)))
+        assertThatThrownBy(() -> absenceService.mark(EMAIL, new AbsenceRequest(DAY, 7, AbsenceType.MISSED, null)))
                 .isInstanceOf(InvalidAbsenceException.class);
         assertThatThrownBy(() -> absenceService.mark(EMAIL, new AbsenceRequest(DAY, 1, null, null)))
                 .isInstanceOf(InvalidAbsenceException.class);
@@ -121,13 +127,14 @@ class AbsenceServiceTest {
                 "ИС1-33", "Понедельник", WeekType.DENOMINATOR, DAY, List.of(
                         new PairResponse(2, cell("Физика"), cell("Химия"), false),
                         new PairResponse(1, cell("Математика"), cell(), false),
+                        new PairResponse(0, cell("Шахматы"), cell(), false),
                         new PairResponse(3, cell(), cell(), false)
                 )));
 
         List<AbsenceResponse> marked = absenceService.markDay(EMAIL, DAY);
 
-        assertThat(marked).extracting(AbsenceResponse::pairNumber).containsExactly(1, 2);
-        assertThat(marked).extracting(AbsenceResponse::subject).containsExactly("Математика", "Химия");
+        assertThat(marked).extracting(AbsenceResponse::pairNumber).containsExactly(0, 1, 2);
+        assertThat(marked).extracting(AbsenceResponse::subject).containsExactly("Шахматы", "Математика", "Химия");
         assertThat(marked).allMatch(a -> a.type() == AbsenceType.MISSED && a.hours() == 2);
     }
 

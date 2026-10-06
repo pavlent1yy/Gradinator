@@ -336,9 +336,7 @@ export function refreshTokens(): Promise<void> {
 /* ---------------------------------------------------------------------- */
 
 export async function fetchMe(): Promise<Me> {
-    const res = await fetch(`${API_BASE}/auth/me`, {
-        credentials: 'include'
-    });
+    const res = await authFetch(`${API_BASE}/auth/me`);
 
     if (!res.ok) {
         throw new Error(
@@ -549,4 +547,18 @@ export function fetchCurrentWeekType(): Promise<string | null> {
     }
 
     return weekTypeCache;
+}
+
+export type WeekDay = {
+    date: string;
+    schedule: Schedule | null;
+};
+
+export async function fetchWeek(group: string, dateIso: string, signal?: AbortSignal): Promise<WeekDay[]> {
+    const params = new URLSearchParams({ group, date: dateIso });
+    const res = await fetch(`${API_BASE}/schedule/week?${params}`, { signal });
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Не удалось загрузить неделю'));
+
+    return res.json();
 }

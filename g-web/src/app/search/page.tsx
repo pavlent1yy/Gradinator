@@ -7,6 +7,7 @@ import PageToolbar from '../../components/PageToolbar';
 import * as api from '../../lib/api';
 import type { DictionaryKind, SearchHit, SearchType } from '../../lib/api';
 import { joinList } from '../../lib/schedule';
+import SubjectText from '../../components/SubjectText';
 
 const TYPES: { value: SearchType; label: string; dictionary: DictionaryKind | null }[] = [
   { value: 'ANY', label: 'Везде', dictionary: null },
@@ -132,7 +133,7 @@ export default function SearchPage() {
                   </button>
                   <div className="entry">
                     <h3 className="subject">
-                      {joinList(hit.subjects, 'Предмет')}
+                      <SubjectText subjects={hit.subjects} />
                       {hit.hasChanges && <span className="changed-stamp">замена</span>}
                     </h3>
                     <div className="meta-row-lesson">
