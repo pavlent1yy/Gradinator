@@ -12,6 +12,54 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  migrations:
+    name: PostgreSQL production schema validation
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: gradinator_core
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ci -d gradinator_core"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - run: mvn -B -ntp -pl g-core -am package -DskipTests
+      - name: Boot production profile against migrated PostgreSQL
+        env:
+          SPRING_PROFILES_ACTIVE: prod
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/gradinator_core
+          DB_USERNAME: ci
+          DB_PASSWORD: ci-only
+          JWT_SECRET: ci-only-not-a-production-secret-at-least-32-bytes-long
+        run: |
+          java -jar g-core/target/g-core-*.jar > /tmp/core-schema.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 90); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:9091/api/core/auth/me || true)
+            if [ "$status" = 401 ]; then
+              echo 'Production migrations and Hibernate validation passed'
+              exit 0
+            fi
+            if ! kill -0 "$app_pid" 2>/dev/null; then
+              cat /tmp/core-schema.log
+              exit 1
+            fi
+            sleep 2
+          done
+          cat /tmp/core-schema.log
+          exit 1
+
   deployment:
     name: Deployment safety checks
     runs-on: ubuntu-latest
@@ -74,7 +122,7 @@ jobs:
   docker:
     name: Сборка образов
     if: github.event_name != 'push' || github.ref != 'refs/heads/develop'
-    needs: [backend, web, deployment]
+    needs: [backend, web, deployment, migrations]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

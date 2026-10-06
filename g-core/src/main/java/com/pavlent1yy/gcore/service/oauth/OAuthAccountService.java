@@ -142,7 +142,7 @@ public class OAuthAccountService {
         boolean firstExternalLogin = !oauthAccountRepository.existsByUser_Id(user.getId());
 
         if (user.getPasswordHash() != null && !emailProvenByOwner && firstExternalLogin) {
-            log.warn("OAuth-вход на аккаунт с неподтверждённым паролем: пароль сброшен, сессии завершены, userId={}", user.getId());
+            log.warn("OAuth login replaced an unverified password and revoked sessions");
             user.setPasswordHash(null);
             refreshSessionRepository.deleteAllByUser_Id(user.getId());
         }
