@@ -7,6 +7,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class EmailVerificationRequest {
-    @NotBlank
+    @NotBlank(message = "В ссылке нет токена подтверждения")
     private String token;
 }

@@ -31,12 +31,20 @@ class GitHubOAuthServiceTest {
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer gh-token"))
                 .andExpect(header(HttpHeaders.ACCEPT, "application/vnd.github+json"))
                 .andRespond(withSuccess("""
-                        [{"email":"second@mail.ru","primary":false},
-                         {"email":"main@mail.ru","primary":true}]
+                        [{"email":"second@mail.ru","primary":false,"verified":true},
+                         {"email":"main@mail.ru","primary":true,"verified":true}]
                         """, MediaType.APPLICATION_JSON));
 
         assertThat(service.getEmail("gh-token")).isEqualTo("main@mail.ru");
         server.verify();
+    }
+
+    @Test
+    void rejectsUnverifiedPrimaryEmail() {
+        server.expect(requestTo("https://api.github.com/user/emails"))
+                .andRespond(withSuccess("[{\"email\":\"a@mail.ru\",\"primary\":true,\"verified\":false}]", MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> service.getEmail("gh-token")).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

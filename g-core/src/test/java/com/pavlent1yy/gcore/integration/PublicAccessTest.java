@@ -121,4 +121,21 @@ class PublicAccessTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ИС1-43")));
     }
+
+    @Test
+    void passwordResetEndpointsArePublic() throws Exception {
+        mockMvc.perform(post("/core/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"nobody@mail.ru\"}"))
+                .andExpect(status().isAccepted());
+        mockMvc.perform(post("/core/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"bad\",\"newPassword\":\"p1\",\"confirmPassword\":\"p1\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Ссылка для сброса недействительна или уже использована"));
+        mockMvc.perform(post("/core/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"token\":\"bad\",\"newPassword\":\"p1\",\"confirmPassword\":\"p2\"}"))
+                .andExpect(status().isBadRequest());
+    }
 }

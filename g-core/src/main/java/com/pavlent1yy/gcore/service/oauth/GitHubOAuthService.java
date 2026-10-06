@@ -32,6 +32,7 @@ public class GitHubOAuthService {
 
         return emails.stream()
                 .filter(email -> Boolean.TRUE.equals(email.get("primary")))
+                .filter(email -> Boolean.TRUE.equals(email.get("verified")))
                 .map(email -> (String) email.get("email"))
                 .findFirst()
                 .orElseThrow(() ->

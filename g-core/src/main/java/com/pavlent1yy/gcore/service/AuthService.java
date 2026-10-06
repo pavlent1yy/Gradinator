@@ -19,8 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import com.pavlent1yy.gcore.customExceptions.EmailNotVerifiedException;
+
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +34,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.Base64;
-import java.util.Locale;
 
 @Service
 @Slf4j
@@ -57,11 +59,12 @@ public class AuthService {
 
         log.debug("Start user registration: email={}", request.getEmail());
 
-        String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
+        PasswordPolicy.validate(request.getPassword());
 
         if (userRepository.findByEmail(normalizedEmail).isPresent()){
             log.warn("Registration failed: user already exists, email={}", request.getEmail());
-            throw new UserAlreadyExistsException("User already exists");
+            throw new UserAlreadyExistsException("Аккаунт с такой почтой уже есть. Войди или восстанови пароль");
         }
 
         User user = new User();
@@ -95,23 +98,32 @@ public class AuthService {
 
         userRepository.save(user);
 
-        log.info("User registered: email={}, enabled={}", user.getEmail(), user.getEnabled());
-        return new UserResponse(user.getId(), user.getEmail(), user.getGroup(), user.getDepartment(), user.getRole());
+        log.debug("User registered: email={}, enabled={}", user.getEmail(), user.getEnabled());
+        return new UserResponse(user.getId(), user.getEmail(), user.getGroup(), user.getDepartment(), user.getRole(), user.getPasswordHash() != null);
     }
 
     public LoginResponse login(LoginRequest request) {
+        String email = EmailNormalizer.normalize(request.getEmail());
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, request.getPassword())
+            );
+        } catch (DisabledException e) {
+            User disabled = userRepository.findByEmail(email).orElse(null);
+            boolean passwordMatches = disabled != null
+                    && disabled.getPasswordHash() != null
+                    && passwordEncoder.matches(request.getPassword(), disabled.getPasswordHash());
+            if (passwordMatches) {
+                throw new EmailNotVerifiedException(
+                        "Почта ещё не подтверждена. Перейди по ссылке из письма или запроси новое"
+                );
+            }
+            throw new BadCredentialsException("Bad credentials");
+        }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        "Пользователь не найден"
-                ));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Bad credentials"));
 
         return tokenService.createSession(user);
     }
@@ -120,20 +132,20 @@ public class AuthService {
         refreshTokenService.revoke(refreshToken);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(noRollbackFor = InvalidRefreshTokenException.class)
     public RefreshSession findValidSession(String token) {
         RefreshSession session = refreshSessionRepository
                 .findByRefreshTokenHash(hash(token))
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Invalid refresh token"
-                ));
+                .orElseThrow(() -> new InvalidRefreshTokenException("Сессия не найдена, войди заново"));
 
         if (session.getRevokedAt() != null) {
-            throw new InvalidRefreshTokenException("Invalid refresh token");
+            log.warn("Reuse of revoked refresh token, revoking all sessions: userId={}", session.getUser().getId());
+            refreshSessionRepository.deleteAllByUser_Id(session.getUser().getId());
+            throw new InvalidRefreshTokenException("Сессия завершена, войди заново");
         }
 
         if (session.getExpiresAt().isBefore(OffsetDateTime.now())) {
-            throw new IllegalArgumentException("Refresh token expired");
+            throw new InvalidRefreshTokenException("Сессия истекла, войди заново");
         }
 
         return session;
@@ -155,6 +167,7 @@ public class AuthService {
         }
     }
 
+    @Transactional(noRollbackFor = InvalidRefreshTokenException.class)
     public LoginResponse refresh(String refreshToken) {
 
         RefreshSession session = findValidSession(refreshToken);

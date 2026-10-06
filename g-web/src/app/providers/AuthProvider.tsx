@@ -16,6 +16,7 @@ type AuthContextValue = {
     initializing: boolean;
     authLoading: boolean;
     authError: string | null;
+    authErrorCode: string | null;
     login: (
         email: string,
         password: string
@@ -44,6 +45,9 @@ export function AuthProvider({
         useState(false);
 
     const [authError, setAuthError] =
+        useState<string | null>(null);
+
+    const [authErrorCode, setAuthErrorCode] =
         useState<string | null>(null);
 
     const restoreSession = useCallback(async () => {
@@ -75,6 +79,7 @@ export function AuthProvider({
 
         setAuthLoading(true);
         setAuthError(null);
+        setAuthErrorCode(null);
 
         try {
 
@@ -94,6 +99,7 @@ export function AuthProvider({
             setAuthError(
                 e instanceof Error ? e.message : 'Не удалось войти'
             );
+            setAuthErrorCode(e instanceof api.ApiError ? e.code ?? null : null);
 
             return false;
 
@@ -117,10 +123,10 @@ export function AuthProvider({
         setUser(await api.fetchMe());
     }, []);
 
-    const clearAuthError = useCallback(
-        () => setAuthError(null),
-        []
-    );
+    const clearAuthError = useCallback(() => {
+        setAuthError(null);
+        setAuthErrorCode(null);
+    }, []);
 
     const value = React.useMemo(
         () => ({
@@ -128,6 +134,7 @@ export function AuthProvider({
             initializing,
             authLoading,
             authError,
+            authErrorCode,
             login,
             logout,
             refreshUser,
@@ -138,6 +145,7 @@ export function AuthProvider({
             initializing,
             authLoading,
             authError,
+            authErrorCode,
             login,
             logout,
             refreshUser,

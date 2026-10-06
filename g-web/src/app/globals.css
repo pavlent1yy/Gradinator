@@ -1723,3 +1723,18 @@ body{
 @media (max-width:540px){
   .day-bar-title{ width:auto; flex:1 1 100%; }
 }
+
+/* Смена пароля в строке аккаунта */
+.password-fields{ display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:10px 12px; }
+.account-actions .btn.is-active{ border-color:var(--ink-navy); background:var(--paper-cream); }
+
+/* Восстановление пароля */
+.forgot-link{
+  justify-self:end;
+  margin-top:-6px;
+  font-size:13px;
+  color:var(--ink-red);
+  text-decoration:none;
+  border-bottom:1px dashed currentColor;
+}
+.forgot-link:hover{ border-bottom-style:solid; }

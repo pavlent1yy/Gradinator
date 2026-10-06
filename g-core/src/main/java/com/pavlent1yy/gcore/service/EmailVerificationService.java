@@ -17,19 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.Base64;
-import java.util.HexFormat;
-import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
 public class EmailVerificationService {
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final Duration RESEND_COOLDOWN = Duration.ofMinutes(1);
 
     private final EmailVerificationTokenRepository tokenRepository;
@@ -64,7 +57,7 @@ public class EmailVerificationService {
 
     @Transactional
     public void resend(String email) {
-        userRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT)).ifPresent(user -> {
+        userRepository.findByEmail(EmailNormalizer.normalize(email)).ifPresent(user -> {
             if (Boolean.TRUE.equals(user.getEnabled())) {
                 return;
             }
@@ -138,19 +131,10 @@ public class EmailVerificationService {
     }
 
     private String generateToken() {
-        byte[] bytes = new byte[32];
-        SECURE_RANDOM.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+        return SecureTokens.generate();
     }
 
     private String hash(String token) {
-        try {
-            return HexFormat.of().formatHex(
-                    MessageDigest.getInstance("SHA-256")
-                            .digest(token.getBytes(StandardCharsets.UTF_8))
-            );
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is unavailable", e);
-        }
+        return SecureTokens.sha256(token);
     }
 }

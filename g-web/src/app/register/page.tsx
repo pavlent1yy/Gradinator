@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import * as api from '../../lib/api';
+import { useAuthContext } from '../providers/AuthProvider';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { login, clearAuthError } = useAuthContext();
   const [groups, setGroups] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,6 +40,7 @@ export default function RegisterPage() {
   function validate() {
     if (!email.trim()) return 'Email обязателен';
     if (!password) return 'Пароль обязателен';
+    if (password.length < api.MIN_PASSWORD_LENGTH) return `Пароль должен быть не короче ${api.MIN_PASSWORD_LENGTH} символов`;
     if (password !== confirmPassword) return 'Пароли не совпадают';
     if (!/^\S+@\S+\.\S+$/.test(email)) return 'Некорректный email';
     if (!agreed) return 'Нужно согласие с условиями';
@@ -65,6 +68,13 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       await api.register(payload);
+
+      if (await login(email, password)) {
+        router.push('/');
+        return;
+      }
+
+      clearAuthError();
       setServerMessage('Мы отправили письмо со ссылкой подтверждения. Проверь также папку «Спам».');
       setPassword('');
       setConfirmPassword('');
@@ -101,6 +111,8 @@ export default function RegisterPage() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             autoComplete="new-password"
+            placeholder="не короче 8 символов"
+            minLength={8}
             required
           />
         </label>

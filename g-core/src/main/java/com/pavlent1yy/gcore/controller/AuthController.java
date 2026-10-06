@@ -6,6 +6,7 @@ import com.pavlent1yy.gcore.dto.records.UserResponse;
 import com.pavlent1yy.gcore.service.AuthCookieService;
 import com.pavlent1yy.gcore.service.AuthService;
 import com.pavlent1yy.gcore.service.EmailVerificationService;
+import com.pavlent1yy.gcore.service.PasswordResetService;
 import com.pavlent1yy.gcore.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class AuthController {
     private final UserService userService;
     private final AuthCookieService authCookieService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     public UserResponse register(@Valid @RequestBody RegisterRequest request) {
@@ -81,6 +83,23 @@ public class AuthController {
                 "message",
                 "Если аккаунт ожидает подтверждения, новое письмо будет отправлено"
         ));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+        passwordResetService.requestReset(request.getEmail());
+        return ResponseEntity.accepted().body(Map.of(
+                "message",
+                "Если аккаунт с такой почтой существует, мы отправили на неё ссылку для сброса пароля"
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public Map<String, String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+        return Map.of("message", "Пароль изменён. Теперь можно войти с новым паролем");
     }
 
     @PostMapping("/refresh")

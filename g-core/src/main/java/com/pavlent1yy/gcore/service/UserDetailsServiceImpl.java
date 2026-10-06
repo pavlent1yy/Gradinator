@@ -20,7 +20,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         log.debug("Attempt to load user by email: {}", email);
 
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmail(EmailNormalizer.normalize(email))
                 .map(user -> {
                     log.debug("User found: email={}, id={}", user.getEmail(), user.getId());
                     return new UserDetailsImpl(user);

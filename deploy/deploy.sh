@@ -14,7 +14,7 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-previous="$(git rev-parse HEAD)"
+previous="${DEPLOY_PREVIOUS:-$(git rev-parse HEAD)}"
 
 git fetch --prune origin "$branch"
 git checkout -q "$branch"

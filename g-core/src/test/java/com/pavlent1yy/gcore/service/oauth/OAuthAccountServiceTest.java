@@ -4,7 +4,9 @@ import com.pavlent1yy.gcore.entity.User;
 import com.pavlent1yy.gcore.entity.UserOAuthAccount;
 import com.pavlent1yy.gcore.enums.OAuthProvider;
 import com.pavlent1yy.gcore.enums.Role;
+import com.pavlent1yy.gcore.repository.RefreshSessionRepository;
 import com.pavlent1yy.gcore.repository.UserOAuthAccountRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 import com.pavlent1yy.gcore.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,13 +35,21 @@ class OAuthAccountServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private RefreshSessionRepository refreshSessionRepository;
+
     @InjectMocks
     private OAuthAccountService oauthAccountService;
 
     private OAuth2User googleUser(String sub, String email) {
+        return googleUser(sub, email, true);
+    }
+
+    private OAuth2User googleUser(String sub, String email, boolean verified) {
         OAuth2User oauthUser = mock(OAuth2User.class);
-        when(oauthUser.getAttribute("sub")).thenReturn(sub);
-        when(oauthUser.getAttribute("email")).thenReturn(email);
+        lenient().when(oauthUser.getAttribute("sub")).thenReturn(sub);
+        lenient().when(oauthUser.getAttribute("email")).thenReturn(email);
+        lenient().when(oauthUser.getAttribute("email_verified")).thenReturn(verified);
         return oauthUser;
     }
 
@@ -66,22 +76,75 @@ class OAuthAccountServiceTest {
         assertThat(account.getValue().getProviderUserId()).isEqualTo("g-1");
     }
 
-    @Test
-    void linksAccountToExistingPasswordUser() {
+    private User existingPasswordUser(boolean enabled) {
         User existing = new User();
+        existing.setId(11L);
         existing.setEmail("old@mail.ru");
         existing.setPasswordHash("hash");
-
+        existing.setEnabled(enabled);
         when(oauthAccountRepository.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, "g-2"))
                 .thenReturn(Optional.empty());
         when(userRepository.findByEmail("old@mail.ru")).thenReturn(Optional.of(existing));
+        return existing;
+    }
 
-        User user = oauthAccountService.getOrCreateUser(
-                googleUser("g-2", "old@mail.ru"), "google", "token");
+    @Test
+    void linksToVerifiedPasswordAccountKeepingPassword() {
+        ReflectionTestUtils.setField(oauthAccountService, "emailVerificationEnabled", true);
+        User existing = existingPasswordUser(true);
+
+        User user = oauthAccountService.getOrCreateUser(googleUser("g-2", "old@mail.ru"), "google", "token");
 
         assertThat(user).isSameAs(existing);
-        verify(userRepository, never()).save(any());
+        assertThat(user.getPasswordHash()).isEqualTo("hash");
+        verifyNoInteractions(refreshSessionRepository);
         verify(oauthAccountRepository).save(any(UserOAuthAccount.class));
+    }
+
+    @Test
+    void unprovenPasswordIsDroppedOnFirstExternalLoginToBlockPreHijack() {
+        ReflectionTestUtils.setField(oauthAccountService, "emailVerificationEnabled", false);
+        User existing = existingPasswordUser(true);
+
+        User user = oauthAccountService.getOrCreateUser(googleUser("g-2", "old@mail.ru"), "google", "token");
+
+        assertThat(user).isSameAs(existing);
+        assertThat(user.getPasswordHash()).isNull();
+        assertThat(user.getEnabled()).isTrue();
+        verify(refreshSessionRepository).deleteAllByUser_Id(11L);
+        verify(oauthAccountRepository).save(any(UserOAuthAccount.class));
+    }
+
+    @Test
+    void pendingVerificationAccountIsAlsoReclaimed() {
+        ReflectionTestUtils.setField(oauthAccountService, "emailVerificationEnabled", true);
+        User existing = existingPasswordUser(false);
+
+        oauthAccountService.getOrCreateUser(googleUser("g-2", "old@mail.ru"), "google", "token");
+
+        assertThat(existing.getPasswordHash()).isNull();
+        assertThat(existing.getEnabled()).isTrue();
+        verify(refreshSessionRepository).deleteAllByUser_Id(11L);
+    }
+
+    @Test
+    void passwordIsKeptWhenAccountAlreadyHasExternalLogin() {
+        ReflectionTestUtils.setField(oauthAccountService, "emailVerificationEnabled", false);
+        User existing = existingPasswordUser(true);
+        when(oauthAccountRepository.existsByUser_Id(11L)).thenReturn(true);
+
+        oauthAccountService.getOrCreateUser(googleUser("g-2", "old@mail.ru"), "google", "token");
+
+        assertThat(existing.getPasswordHash()).isEqualTo("hash");
+        verifyNoInteractions(refreshSessionRepository);
+    }
+
+    @Test
+    void googleUnverifiedEmailIsRejected() {
+        assertThatThrownBy(() -> oauthAccountService.getOrCreateUser(
+                googleUser("g-7", "victim@mail.ru", false), "google", "token"))
+                .isInstanceOf(IllegalStateException.class);
+        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -151,6 +214,7 @@ class OAuthAccountServiceTest {
     @Test
     void doesNotDuplicateAlreadyExistingAccountLink() {
         User existing = new User();
+        existing.setId(12L);
         when(oauthAccountRepository.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, "g-5"))
                 .thenReturn(Optional.empty());
         when(userRepository.findByEmail("old@mail.ru")).thenReturn(Optional.of(existing));

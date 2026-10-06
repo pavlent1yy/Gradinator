@@ -7,8 +7,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ResendVerificationRequest {
+public class ForgotPasswordRequest {
     @Email(message = "Некорректный email")
-    @NotBlank(message = "Укажи email")
+    @NotBlank(message = "Email обязателен")
     private String email;
 }

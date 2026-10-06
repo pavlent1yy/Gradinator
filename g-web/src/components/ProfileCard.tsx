@@ -24,12 +24,21 @@ export default function ProfileCard() {
     const [confirmOpen, setConfirmOpen] = useState(false);
     const closeConfirm = useCallback(() => setConfirmOpen(false), []);
     const [deleteError, setDeleteError] = useState('');
+    const [editingPassword, setEditingPassword] = useState(false);
+    const [oldPassword, setOldPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordMessage, setPasswordMessage] = useState('');
+    const [passwordError, setPasswordError] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
 
     if (initializing || !user) {
         return null;
     }
 
     async function startGroupEdit() {
+        setEditingPassword(false);
+        setPasswordMessage('');
         setEditingGroup(true);
         setGroupMessage('');
 
@@ -98,6 +107,48 @@ export default function ProfileCard() {
         }
     }
 
+    function openPasswordEdit() {
+        setEditingGroup(false);
+        setEditingPassword(true);
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setPasswordMessage('');
+    }
+
+    async function onChangePassword(e: React.FormEvent) {
+        e.preventDefault();
+        setPasswordMessage('');
+        setPasswordError(true);
+
+        if ((user!.hasPassword && !oldPassword) || !newPassword || !confirmPassword) {
+            setPasswordMessage('Заполни все поля.');
+            return;
+        }
+        if (newPassword.length < api.MIN_PASSWORD_LENGTH) {
+            setPasswordMessage(`Пароль должен быть не короче ${api.MIN_PASSWORD_LENGTH} символов.`);
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setPasswordMessage('Пароли не совпадают.');
+            return;
+        }
+
+        setChangingPassword(true);
+        try {
+            await api.changePassword(user!.hasPassword ? oldPassword : null, newPassword);
+            await refreshUser();
+            setEditingPassword(false);
+            setPasswordError(false);
+            setPasswordMessage(user!.hasPassword ? 'Пароль успешно изменён.' : 'Пароль установлен. Теперь можно входить и по email.');
+        } catch (error) {
+            setPasswordMessage(error instanceof Error ? error.message : 'Не удалось изменить пароль.');
+        } finally {
+            setChangingPassword(false);
+        }
+    }
+
+    const passwordLabel = user.hasPassword ? 'Сменить пароль' : 'Установить пароль';
     const roleLabel = user.role === 'ADMIN' ? 'Администратор' : 'Студент';
 
     return (
@@ -121,8 +172,13 @@ export default function ProfileCard() {
                     </div>
                 </div>
                 <div className="account-actions">
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => router.push('/change-password')}>
-                        Сменить пароль
+                    <button
+                        type="button"
+                        className={`btn btn-ghost btn-sm${editingPassword ? ' is-active' : ''}`}
+                        onClick={() => (editingPassword ? setEditingPassword(false) : openPasswordEdit())}
+                        aria-expanded={editingPassword}
+                    >
+                        {passwordLabel}
                     </button>
                     <LogoutButton className="btn btn-ghost btn-sm">Выйти</LogoutButton>
                 </div>
@@ -133,6 +189,65 @@ export default function ProfileCard() {
                     {deleting ? 'Удаление…' : 'Удалить аккаунт'}
                 </button>
             </div>
+
+            {editingPassword && (
+                <form className="account-edit password-form" onSubmit={onChangePassword}>
+                    {!user.hasPassword && (
+                        <p className="profile-hint">
+                            Ты входишь через Google или GitHub, поэтому пароля у аккаунта пока нет.
+                            Установи его, чтобы входить и по email.
+                        </p>
+                    )}
+                    <div className="password-fields">
+                        {user.hasPassword && (
+                            <label className="field">
+                                <span className="field-label">Текущий пароль</span>
+                                <input
+                                    className="field-input"
+                                    type="password"
+                                    value={oldPassword}
+                                    onChange={(e) => setOldPassword(e.target.value)}
+                                    autoComplete="current-password"
+                                    autoFocus
+                                />
+                            </label>
+                        )}
+                        <label className="field">
+                            <span className="field-label">Новый пароль</span>
+                            <input
+                                className="field-input"
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                autoComplete="new-password"
+                                autoFocus={!user.hasPassword}
+                            />
+                        </label>
+                        <label className="field">
+                            <span className="field-label">Подтверждение пароля</span>
+                            <input
+                                className="field-input"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                autoComplete="new-password"
+                            />
+                        </label>
+                    </div>
+                    <div className="profile-actions">
+                        <button type="submit" className="btn btn-primary" disabled={changingPassword}>
+                            {changingPassword ? 'Сохранение…' : 'Сохранить'}
+                        </button>
+                        <button type="button" className="btn btn-ghost" onClick={() => setEditingPassword(false)}>
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            )}
+
+            {passwordMessage && (
+                <div className="warning-note profile-note" role={passwordError ? 'alert' : 'status'}>{passwordMessage}</div>
+            )}
 
             {editingGroup && (
                 <form className="account-edit group-edit-form" onSubmit={onChangeGroup}>

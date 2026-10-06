@@ -23,7 +23,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
@@ -76,8 +75,8 @@ class AuthServiceTest {
     private static RegisterRequest request(String email, String group, String department) {
         RegisterRequest request = new RegisterRequest();
         request.setEmail(email);
-        request.setPassword("secret");
-        request.setConfirmPassword("secret");
+        request.setPassword("secret-pass");
+        request.setConfirmPassword("secret-pass");
         request.setGroup(group);
         request.setDepartment(department);
         return request;
@@ -91,7 +90,7 @@ class AuthServiceTest {
     @Test
     void registerNormalizesEmailAndHashesPassword() {
         when(userRepository.findByEmail("new@mail.ru")).thenReturn(Optional.empty());
-        when(passwordEncoder.encode("secret")).thenReturn("hash");
+        when(passwordEncoder.encode("secret-pass")).thenReturn("hash");
 
         UserResponse response = authService.register(request("  New@Mail.RU ", null, null));
 
@@ -107,7 +106,20 @@ class AuthServiceTest {
         when(userRepository.findByEmail("old@mail.ru")).thenReturn(Optional.of(new User()));
 
         assertThatThrownBy(() -> authService.register(request("OLD@mail.ru", null, null)))
-                .isInstanceOf(UserAlreadyExistsException.class);
+                .isInstanceOf(UserAlreadyExistsException.class)
+                .hasMessageContaining("уже есть");
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerRejectsShortPassword() {
+        RegisterRequest request = request("a@mail.ru", null, null);
+        request.setPassword("short");
+        request.setConfirmPassword("short");
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(com.pavlent1yy.gcore.customExceptions.PasswordIsIncorrect.class)
+                .hasMessageContaining("8");
         verify(userRepository, never()).save(any());
     }
 
@@ -196,7 +208,44 @@ class AuthServiceTest {
         request.setPassword("secret");
         when(userRepository.findByEmail("a@mail.ru")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.login(request)).isInstanceOf(UsernameNotFoundException.class);
+        assertThatThrownBy(() -> authService.login(request)).isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void loginNormalizesEmail() {
+        User user = new User();
+        LoginRequest request = new LoginRequest();
+        request.setEmail("  A@Mail.RU ");
+        request.setPassword("secret");
+        when(userRepository.findByEmail("a@mail.ru")).thenReturn(Optional.of(user));
+        when(tokenService.createSession(user)).thenReturn(new LoginResponse("access", "refresh"));
+
+        authService.login(request);
+
+        verify(authenticationManager).authenticate(argThat(a -> "a@mail.ru".equals(a.getPrincipal())));
+    }
+
+    @Test
+    void unverifiedAccountIsReportedOnlyWithCorrectPassword() {
+        User user = new User();
+        user.setPasswordHash("hash");
+        when(userRepository.findByEmail("a@mail.ru")).thenReturn(Optional.of(user));
+        when(authenticationManager.authenticate(any()))
+                .thenThrow(new org.springframework.security.authentication.DisabledException("disabled"));
+        when(passwordEncoder.matches("right", "hash")).thenReturn(true);
+        when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
+
+        LoginRequest right = new LoginRequest();
+        right.setEmail("a@mail.ru");
+        right.setPassword("right");
+        LoginRequest wrong = new LoginRequest();
+        wrong.setEmail("a@mail.ru");
+        wrong.setPassword("wrong");
+
+        assertThatThrownBy(() -> authService.login(right))
+                .isInstanceOf(com.pavlent1yy.gcore.customExceptions.EmailNotVerifiedException.class);
+        assertThatThrownBy(() -> authService.login(wrong)).isInstanceOf(BadCredentialsException.class);
+        verifyNoInteractions(tokenService);
     }
 
     @Test
@@ -217,16 +266,19 @@ class AuthServiceTest {
     @Test
     void findValidSessionRejectsUnknownRevokedAndExpired() throws Exception {
         when(refreshSessionRepository.findByRefreshTokenHash(hash("unknown"))).thenReturn(Optional.empty());
+        User owner = new User();
+        owner.setId(9L);
         when(refreshSessionRepository.findByRefreshTokenHash(hash("revoked"))).thenReturn(Optional.of(
-                RefreshSession.builder().revokedAt(OffsetDateTime.now()).expiresAt(OffsetDateTime.now().plusDays(1)).build()));
+                RefreshSession.builder().user(owner).revokedAt(OffsetDateTime.now()).expiresAt(OffsetDateTime.now().plusDays(1)).build()));
         when(refreshSessionRepository.findByRefreshTokenHash(hash("expired"))).thenReturn(Optional.of(
                 RefreshSession.builder().expiresAt(OffsetDateTime.now().minusSeconds(1)).build()));
 
-        assertThatThrownBy(() -> authService.findValidSession("unknown")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> authService.findValidSession("unknown")).isInstanceOf(InvalidRefreshTokenException.class);
         assertThatThrownBy(() -> authService.findValidSession("revoked")).isInstanceOf(InvalidRefreshTokenException.class);
         assertThatThrownBy(() -> authService.findValidSession("expired"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("expired");
+                .isInstanceOf(InvalidRefreshTokenException.class)
+                .hasMessageContaining("истекла");
+        verify(refreshSessionRepository).deleteAllByUser_Id(9L);
     }
 
     @Test

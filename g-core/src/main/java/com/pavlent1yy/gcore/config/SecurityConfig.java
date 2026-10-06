@@ -65,6 +65,8 @@ public class SecurityConfig {
                                 "/core/auth/register",
                                 "/core/auth/verify-email",
                                 "/core/auth/resend-verification",
+                                "/core/auth/forgot-password",
+                                "/core/auth/reset-password",
                                 "/core/auth/refresh",
                                 "/core/auth/logout"
                         )

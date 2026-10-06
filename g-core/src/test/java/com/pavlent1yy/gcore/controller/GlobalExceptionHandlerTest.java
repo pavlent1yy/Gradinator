@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GlobalExceptionHandlerTest {
 
-    private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+    private final GlobalExceptionHandler handler = new GlobalExceptionHandler(new com.pavlent1yy.gcore.service.AuthCookieService());
 
     @Test
     void scheduleNotFoundIs404() {

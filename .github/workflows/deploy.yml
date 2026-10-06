@@ -33,7 +33,11 @@ jobs:
           script: |
             set -e
             cd "${{ secrets.DEPLOY_PATH }}"
-            sh deploy/deploy.sh
+            previous="$(git rev-parse HEAD)"
+            git fetch --prune origin main
+            git checkout -q main
+            git merge --ff-only origin/main
+            DEPLOY_PREVIOUS="$previous" sh deploy/deploy.sh
 
       - name: Проверка снаружи
         if: vars.PROD_URL != ''

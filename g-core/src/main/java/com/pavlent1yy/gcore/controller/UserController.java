@@ -3,7 +3,10 @@ package com.pavlent1yy.gcore.controller;
 import com.pavlent1yy.gcore.dto.records.ChangeGroupRequest;
 import com.pavlent1yy.gcore.dto.records.ChangePasswordRequest;
 import com.pavlent1yy.gcore.service.UserService;
+import com.pavlent1yy.gcore.dto.records.LoginResponse;
+import com.pavlent1yy.gcore.entity.User;
 import com.pavlent1yy.gcore.service.AuthCookieService;
+import com.pavlent1yy.gcore.service.jwt.TokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -23,10 +26,17 @@ public class UserController {
 
     private final UserService userService;
     private final AuthCookieService authCookieService;
+    private final TokenService tokenService;
 
     @PutMapping("/change-password")
-    public void changePassword(Authentication authentication, @RequestBody ChangePasswordRequest request) {
-        userService.changePassword(authentication.getName(), request);
+    public ResponseEntity<Void> changePassword(Authentication authentication, @RequestBody ChangePasswordRequest request) {
+        User user = userService.changePassword(authentication.getName(), request);
+        LoginResponse tokens = tokenService.createSession(user);
+
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, authCookieService.accessCookie(tokens.accessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, authCookieService.refreshCookie(tokens.refreshToken()).toString())
+                .build();
     }
 
     @PutMapping("/change-group")

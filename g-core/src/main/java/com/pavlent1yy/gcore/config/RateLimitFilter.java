@@ -29,11 +29,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final Set<String> AUTH_PATHS = Set.of(
             "/core/auth/login",
-            "/core/auth/register"
+            "/core/auth/register",
+            "/core/auth/reset-password"
     );
 
     private static final Set<String> EMAIL_PATHS = Set.of(
-            "/core/auth/resend-verification"
+            "/core/auth/resend-verification",
+            "/core/auth/forgot-password"
     );
 
     private static final Pattern INTERNAL_ADDRESS = Pattern.compile(

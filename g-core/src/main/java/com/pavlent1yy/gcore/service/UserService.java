@@ -8,6 +8,7 @@ import com.pavlent1yy.gcore.dto.records.UserResponse;
 import com.pavlent1yy.gcore.entity.User;
 import com.pavlent1yy.gcore.repository.AbsenceRepository;
 import com.pavlent1yy.gcore.repository.EmailVerificationTokenRepository;
+import com.pavlent1yy.gcore.repository.PasswordResetTokenRepository;
 import com.pavlent1yy.gcore.repository.RefreshSessionRepository;
 import com.pavlent1yy.gcore.repository.UserOAuthAccountRepository;
 import com.pavlent1yy.gcore.repository.UserRepository;
@@ -28,6 +29,7 @@ public class UserService {
     private final UserOAuthAccountRepository oauthAccountRepository;
     private final RefreshSessionRepository refreshSessionRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     private User getUserByEmail(String email){
         return userRepository.findByEmail(email)
@@ -44,18 +46,28 @@ public class UserService {
                 user.getEmail(),
                 user.getGroup(),
                 user.getDepartment(),
-                user.getRole()
+                user.getRole(),
+                user.getPasswordHash() != null
         );
     }
 
-    public void changePassword(String email, ChangePasswordRequest passwordRequest){
+    @Transactional
+    public User changePassword(String email, ChangePasswordRequest passwordRequest){
         User user = getUserByEmail(email);
+        String newPassword = passwordRequest.newPassword();
+        PasswordPolicy.validate(newPassword);
         if (user.getPasswordHash() == null) {
-            throw new PasswordIsIncorrect("У аккаунта нет пароля: вход выполнен через Google/GitHub");
-        }
-        if (passwordEncoder.matches(passwordRequest.oldPassword(), user.getPasswordHash())){
-            user.setPasswordHash(passwordEncoder.encode(passwordRequest.newPassword()));
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
             userRepository.save(user);
+            refreshSessionRepository.deleteAllByUser_Id(user.getId());
+            return user;
+        }
+        if (passwordRequest.oldPassword() != null
+                && passwordEncoder.matches(passwordRequest.oldPassword(), user.getPasswordHash())){
+            user.setPasswordHash(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            refreshSessionRepository.deleteAllByUser_Id(user.getId());
+            return user;
         } else{
             throw new PasswordIsIncorrect("Неверный текущий пароль");
         }
@@ -81,6 +93,7 @@ public class UserService {
         oauthAccountRepository.deleteAllByUser_Id(userId);
         refreshSessionRepository.deleteAllByUser_Id(userId);
         emailVerificationTokenRepository.deleteAllByUser_Id(userId);
+        passwordResetTokenRepository.deleteAllByUser_Id(userId);
         userRepository.delete(user);
     }
 }

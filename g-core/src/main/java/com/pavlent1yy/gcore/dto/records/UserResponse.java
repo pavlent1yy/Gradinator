@@ -7,5 +7,6 @@ public record UserResponse(
         String email,
         String group,
         String department,
-        Role role
+        Role role,
+        boolean hasPassword
 ) {}

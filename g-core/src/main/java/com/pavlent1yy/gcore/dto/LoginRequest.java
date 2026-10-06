@@ -9,10 +9,10 @@ import lombok.Setter;
 @Setter
 public class LoginRequest {
 
-    @Email
-    @NotBlank
+    @Email(message = "Некорректный email")
+    @NotBlank(message = "Укажи email")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "Укажи пароль")
     private String password;
 }

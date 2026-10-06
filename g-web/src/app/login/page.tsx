@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '../providers/AuthProvider';
+import * as api from '../../lib/api';
 
 const RU_OAUTH_ENABLED = false;
 
@@ -21,7 +22,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const oauthFailed = searchParams.get('error') === 'oauth';
-  const { login, authLoading, authError, clearAuthError } = useAuthContext();
+  const { login, authLoading, authError, authErrorCode, clearAuthError } = useAuthContext();
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [clientMessage, setClientMessage] = useState<string | null>(null);
@@ -30,6 +32,7 @@ function LoginForm() {
     e.preventDefault();
     setClientMessage(null);
     clearAuthError();
+    setResendState('idle');
 
     if (!email.trim() || !password) {
       setClientMessage('Укажи email и пароль');
@@ -74,8 +77,30 @@ function LoginForm() {
             required
           />
         </label>
+        <Link href={email ? `/forgot-password?email=${encodeURIComponent(email)}` : '/forgot-password'} className="forgot-link">
+          Забыл пароль?
+        </Link>
 
         {message && <div className="warning-note" role="status">{message}</div>}
+
+        {authErrorCode === 'EMAIL_NOT_VERIFIED' && (
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={resendState !== 'idle'}
+            onClick={async () => {
+              setResendState('sending');
+              try {
+                await api.resendVerification(email.trim());
+                setResendState('sent');
+              } catch {
+                setResendState('idle');
+              }
+            }}
+          >
+            {resendState === 'sent' ? 'Письмо отправлено — проверь почту' : resendState === 'sending' ? 'Отправка…' : 'Отправить письмо ещё раз'}
+          </button>
+        )}
 
         <div className="auth-actions">
           <button type="submit" className="btn btn-primary" disabled={authLoading}>

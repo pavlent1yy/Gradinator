@@ -6,6 +6,14 @@ const API_BASE = '/api/core';
 /* Error helpers                                                          */
 /* ---------------------------------------------------------------------- */
 
+export const MIN_PASSWORD_LENGTH = 8;
+
+export class ApiError extends Error {
+    constructor(message: string, readonly code?: string) {
+        super(message);
+    }
+}
+
 async function readErrorMessage(
     res: Response,
     fallback: string
@@ -153,7 +161,7 @@ export async function changeGroup(
 }
 
 export async function changePassword(
-    oldPassword: string,
+    oldPassword: string | null,
     newPassword: string
 ): Promise<void> {
 
@@ -229,6 +237,7 @@ export type Me = {
     email: string;
     group: string | null;
     role: string;
+    hasPassword: boolean;
 };
 
 /* ---------------------------------------------------------------------- */
@@ -249,13 +258,25 @@ export async function login(
     });
 
     if (!res.ok) {
-        throw new Error(
-            await readErrorMessage(
-                res,
-                'Не удалось войти'
-            )
+        const data = await res.json().catch(() => null);
+        throw new ApiError(
+            data?.error ?? `Не удалось войти: ${res.status}`,
+            data?.code
         );
     }
+}
+
+export async function resendVerification(email: string): Promise<string | null> {
+    const res = await fetch(`${API_BASE}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+    });
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Не удалось отправить письмо'));
+
+    const data = await res.json().catch(() => null);
+    return data?.message ?? null;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -567,4 +588,33 @@ export async function fetchWeek(group: string, dateIso: string, signal?: AbortSi
     if (!res.ok) throw new Error(await readErrorMessage(res, 'Не удалось загрузить неделю'));
 
     return res.json();
+}
+
+/* ---------------------------------------------------------------------- */
+/* Восстановление пароля                                                  */
+/* ---------------------------------------------------------------------- */
+
+async function postPublic(url: string, body: unknown, fallback: string): Promise<string | null> {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, fallback));
+
+    const data = await res.json().catch(() => null);
+    return data?.message ?? null;
+}
+
+export function requestPasswordReset(email: string): Promise<string | null> {
+    return postPublic(`${API_BASE}/auth/forgot-password`, { email }, 'Не удалось отправить письмо');
+}
+
+export function resetPassword(token: string, newPassword: string, confirmPassword: string): Promise<string | null> {
+    return postPublic(
+        `${API_BASE}/auth/reset-password`,
+        { token, newPassword, confirmPassword },
+        'Не удалось сменить пароль'
+    );
 }
