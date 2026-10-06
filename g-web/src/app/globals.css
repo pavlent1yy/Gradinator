@@ -1303,7 +1303,9 @@ body{
   position:fixed; inset:0; z-index:3000;
   display:flex; align-items:center; justify-content:center;
   padding:16px;
-  background: rgba(40,26,12,0.45);
+  background: rgba(40,26,12,0.5);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   animation: modal-fade .18s ease-out;
 }
 .modal-card{
@@ -1516,7 +1518,7 @@ body{
    Масштаб интерфейса и разгрузка «Недели»
    ========================================================================= */
 .desk{ zoom:1.04; }
-.cookie-notice{ zoom:1.04; }
+.cookie-notice, .modal-card{ zoom:1.04; }
 
 .week-grid{ gap:18px; }
 .week-day{ padding:14px 16px 16px; gap:0; }
@@ -1585,3 +1587,35 @@ body{
 }
 .absence-stamp--missed{ color:var(--ink-red); }
 .absence-stamp--late{ color:var(--ink-mustard); }
+
+/* Пропуски + профиль на одной странице */
+.absences-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.absences-head .link-btn{ font-size:13px; text-decoration:none; border-bottom:1px dashed currentColor; }
+.absences + .profile-card{ margin-top:30px; scroll-margin-top:20px; }
+.guest-absences .auth-lead{ line-height:1.5; }
+.guest-points{ margin:4px 0 16px; padding-left:20px; font-size:14px; line-height:1.7; color:var(--ink-navy); }
+.guest-points li::marker{ color:var(--ink-red); }
+
+/* Аккаунт в шапке страницы пропусков */
+.account-strip{
+  margin-bottom:22px;
+  padding:14px 16px;
+  background:var(--paper-white);
+  border:1.5px solid var(--line-hair);
+  border-radius:6px;
+  box-shadow: 3px 4px 0 rgba(34,49,74,0.06);
+  scroll-margin-top:20px;
+}
+.account-main{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.account-main .profile-avatar{ width:48px; height:48px; font-size:19px; }
+.account-info{ display:grid; gap:4px; min-width:0; flex:1 1 240px; }
+.account-email{ font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; overflow-wrap:anywhere; }
+.account-email .profile-role{ margin-top:0; }
+.account-group{ font-size:14px; color:var(--ink-navy-soft); display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.account-group strong{ color:var(--ink-navy); }
+.account-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.account-edit{ display:grid; gap:10px; margin-top:14px; padding-top:14px; border-top:2px dashed var(--line-hair); }
+@media (max-width:540px){
+  .account-actions{ width:100%; }
+  .account-actions .btn{ flex:1 1 auto; width:auto; }
+}

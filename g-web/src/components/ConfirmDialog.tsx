@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 type Props = {
   open: boolean;
@@ -46,9 +47,9 @@ export default function ConfirmDialog({
     };
   }, [open, busy, onCancel]);
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
       <div className="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="modal-title">
         <span className="tape tape--left modal-tape" aria-hidden="true" />
@@ -68,6 +69,7 @@ export default function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

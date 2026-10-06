@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '../providers/AuthProvider';
 import { useScheduleContext } from '../providers/ScheduleProvider';
@@ -11,6 +10,7 @@ import { formatDateLong, formatDateShort, isDayOff, toIsoDate } from '../../lib/
 import { joinList, pickSlot } from '../../lib/schedule';
 import type { Schedule } from '../../types/schedule';
 import PageToolbar from '../../components/PageToolbar';
+import ProfileCard from '../../components/ProfileCard';
 import { stripAlert } from '../../components/SubjectText';
 
 const FALLBACK_PAIRS = [0, 1, 2, 3, 4, 5, 6];
@@ -50,10 +50,6 @@ export default function AbsencesPage() {
   const scheduleLoaded = scheduleKey !== null && loadedSchedule?.key === scheduleKey;
   const schedule = scheduleLoaded ? loadedSchedule.data : null;
   const scheduleMissing = scheduleLoaded && schedule === null;
-
-  useEffect(() => {
-    if (!initializing && !user) router.replace('/login');
-  }, [initializing, user, router]);
 
   const reloadSummary = useCallback(async () => {
     const [s, h] = await Promise.all([
@@ -173,17 +169,41 @@ export default function AbsencesPage() {
     }
   }
 
-  if (initializing || !user) {
+  if (initializing) {
     return <div className="status-card" role="status">Загрузка…</div>;
+  }
+
+  if (!user) {
+    return (
+      <section className="auth-panel guest-absences" aria-labelledby="guest-title">
+        <h1 id="guest-title" className="auth-title">Пропуски</h1>
+        <p className="auth-lead">
+          Здесь ты отмечаешь пропущенные пары и опоздания, а сайт считает часы за неделю, месяц, семестр
+          и всё время. Отметки видны только тебе.
+        </p>
+        <ul className="guest-points">
+          <li>Отметить пару, опоздание или весь день — в один клик</li>
+          <li>Пропуски видны прямо в расписании недели</li>
+          <li>Здесь же профиль: группа, пароль, выход</li>
+        </ul>
+        <div className="auth-actions">
+          <button type="button" className="btn btn-primary" onClick={() => router.push('/login')}>Войти</button>
+          <button type="button" className="btn btn-ghost" onClick={() => router.push('/register')}>Зарегистрироваться</button>
+        </div>
+      </section>
+    );
   }
 
   return (
     <div className="page">
+      <ProfileCard />
       <PageToolbar showGroupPicker={false}>
         <p className="absence-hint">Пропущенная пара — 2 часа, опоздание — 1 час.</p>
       </PageToolbar>
       <section className="absences" aria-labelledby="absences-title">
-        <h1 id="absences-title" className="auth-title">Пропуски</h1>
+
+
+        <h1 id="absences-title" className="auth-title">Мои пропуски</h1>
 
         <div className="absence-stats">
           {PERIODS.map(({ key, label }) => {
@@ -206,7 +226,7 @@ export default function AbsencesPage() {
 
         {!group ? (
           <div className="status-card">
-            Укажи группу в <Link href="/profile">профиле</Link> — тогда появятся пары.
+            Укажи группу в <a href="#profile">профиле выше</a> — тогда появятся пары.
           </div>
         ) : isFuture ? (
           <div className="status-card">Будущие даты отметить нельзя.</div>

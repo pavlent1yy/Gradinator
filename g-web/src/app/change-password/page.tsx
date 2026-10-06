@@ -141,7 +141,7 @@ export default function ChangePasswordPage() {
           <button
             type="button"
             className="btn btn-ghost"
-            onClick={() => router.push('/profile')}
+            onClick={() => router.push('/absences#profile')}
           >
             Назад
           </button>

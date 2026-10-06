@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthContext } from '../app/providers/AuthProvider';
-import LogoutButton from './LogoutButton';
 import { useScheduleContext } from '../app/providers/ScheduleProvider';
 import { fetchCurrentWeekType } from '../lib/api';
 import { formatDateLong, formatDayName, weekTypeLabel } from '../lib/date';
@@ -53,7 +52,7 @@ export default function Header() {
         {navLink('/week', 'Неделя')}
         {navLink('/search', 'Поиск')}
         {navLink('/rooms', 'Аудитории')}
-        {user && navLink('/absences', 'Пропуски')}
+        {navLink('/absences', 'Пропуски')}
       </nav>
 
       <div className="mast-user">
@@ -68,9 +67,9 @@ export default function Header() {
           <>
             <button
               type="button"
-              className={`user-badge${pathname === '/profile' ? ' is-active' : ''}`}
-              onClick={() => router.push('/profile')}
-              title="Профиль"
+              className={`user-badge${pathname === '/absences' ? ' is-active' : ''}`}
+              onClick={() => router.push('/absences#profile')}
+              title="Профиль и пропуски"
             >
               <span className="user-avatar">{initialsFromEmail(user.email)}</span>
               <span className="user-badge-text">
@@ -78,13 +77,6 @@ export default function Header() {
                 <span className="user-badge-group">{user.group ?? 'без группы'}</span>
               </span>
             </button>
-            <LogoutButton className="btn-logout" title="Выйти" ariaLabel="Выйти">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </LogoutButton>
           </>
         )}
       </div>
