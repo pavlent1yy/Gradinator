@@ -4,7 +4,8 @@ import { ScheduleProvider } from './providers/ScheduleProvider';
 import Header from '../components/Header';
 import CookieNotice from '../components/CookieNotice';
 import Link from 'next/link';
-import { Inter, Oswald, Roboto_Mono, Patrick_Hand, Special_Elite } from 'next/font/google';
+import PageFlip from '../components/PageFlip';
+import { Inter, Oswald, JetBrains_Mono, Caveat } from 'next/font/google';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -18,23 +19,15 @@ const oswald = Oswald({
   display: 'swap',
 });
 
-const robotoMono = Roboto_Mono({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin', 'cyrillic'],
   variable: '--font-mono',
   display: 'swap',
 });
 
-const patrickHand = Patrick_Hand({
-  weight: '400',
-  subsets: ['latin'],
+const caveat = Caveat({
+  subsets: ['latin', 'cyrillic'],
   variable: '--font-hand',
-  display: 'swap',
-});
-
-const specialElite = Special_Elite({
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-stamp',
   display: 'swap',
 });
 
@@ -47,17 +40,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="ru"
-      className={`${inter.variable} ${oswald.variable} ${robotoMono.variable} ${patrickHand.variable} ${specialElite.variable}`}
+      className={`${inter.variable} ${oswald.variable} ${jetbrainsMono.variable} ${caveat.variable}`}
     >
       <body>
         <AuthProvider>
           <ScheduleProvider>
             <div className="desk">
               <div className="app" id="app-root">
-                <span className="clip" aria-hidden="true">
-                  <span className="clip-rivet clip-rivet--left" />
-                  <span className="clip-rivet clip-rivet--right" />
-                </span>
                 <span className="tape tape--left" aria-hidden="true" />
                 <span className="tape tape--right" aria-hidden="true" />
                 <span className="binder-holes" aria-hidden="true">
@@ -66,7 +55,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <span />
                 </span>
                 <Header />
-                <main className="page-main">{children}</main>
+                <main className="page-main">
+                  <PageFlip>{children}</PageFlip>
+                </main>
                 <footer className="page-foot">
                   <div className="foot-left mono">
                     Неофициальный студенческий проект. Сверяйся с расписанием колледжа.

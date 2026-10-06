@@ -29,7 +29,7 @@ export default function Page() {
       <section className="schedule" id="schedule" aria-label="Расписание">
         {warning && (
           <div className="status-card status-card--warn" role="status">
-            <strong>Подожди:</strong> {warning}
+            {warning}
           </div>
         )}
 

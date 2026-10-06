@@ -142,12 +142,35 @@ export default function AbsencesPage() {
     }
   }
 
-  function setPairState(row: Row, type: AbsenceType | null) {
-    const current = markByPair.get(row.pairNumber)?.type ?? null;
-    if (current === type) return;
-    run(() => type
-      ? api.markAbsence(date, row.pairNumber, type, row.subject)
-      : api.unmarkAbsence(date, row.pairNumber));
+  async function setPairState(row: Row, type: AbsenceType | null) {
+    const existing = markByPair.get(row.pairNumber);
+    if ((existing?.type ?? null) === type) return;
+
+    const previous = dayAbsences;
+    const others = dayAbsences.filter((a) => a.pairNumber !== row.pairNumber);
+    setMessage(null);
+    setDayAbsences(type
+      ? [...others, {
+          id: existing?.id ?? -row.pairNumber - 1,
+          date,
+          pairNumber: row.pairNumber,
+          type,
+          subject: row.subject,
+          hours: type === 'MISSED' ? 2 : 1
+        }]
+      : others);
+
+    try {
+      if (type) {
+        await api.markAbsence(date, row.pairNumber, type, row.subject);
+      } else {
+        await api.unmarkAbsence(date, row.pairNumber);
+      }
+      reloadSummary().catch(() => null);
+    } catch (e) {
+      setDayAbsences(previous);
+      setMessage(e instanceof Error ? e.message : 'Произошла ошибка');
+    }
   }
 
   if (initializing || !user) {
@@ -210,9 +233,9 @@ export default function AbsencesPage() {
                     <div className="pair-body">
                       <h3 className="subject">{row.subject ?? `Пара ${row.pairNumber}`}</h3>
                       <div className="absence-toggle" role="group" aria-label={`Пара ${row.pairNumber}`}>
-                        <button type="button" disabled={busy} aria-pressed={state === null} onClick={() => setPairState(row, null)}>Был</button>
-                        <button type="button" disabled={busy} aria-pressed={state === 'LATE'} onClick={() => setPairState(row, 'LATE')}>Опоздал</button>
-                        <button type="button" disabled={busy} aria-pressed={state === 'MISSED'} onClick={() => setPairState(row, 'MISSED')}>Пропустил</button>
+                        <button type="button" aria-pressed={state === null} onClick={() => setPairState(row, null)}>Был</button>
+                        <button type="button" aria-pressed={state === 'LATE'} onClick={() => setPairState(row, 'LATE')}>Опоздал</button>
+                        <button type="button" aria-pressed={state === 'MISSED'} onClick={() => setPairState(row, 'MISSED')}>Пропустил</button>
                       </div>
                     </div>
                   </article>

@@ -36,7 +36,7 @@
   --display: var(--font-display), "Segoe UI", sans-serif;
   --mono: var(--font-mono), ui-monospace, monospace;
   --hand: var(--font-hand), "Segoe Script", cursive;
-  --stamp: var(--font-stamp), var(--mono);
+  --stamp: var(--font-display), var(--ui);
 
   --radius-card: 3px;
 }
@@ -1084,7 +1084,6 @@ body{
 .toolbar-end{ margin-left:auto; display:flex; align-items:center; gap:10px; }
 .page-toolbar .absence-hint{ margin:0; }
 
-.auth-panel{ margin-left:0; }
 .legal{ margin-left:0; }
 
 .chip{
@@ -1340,3 +1339,249 @@ body{
 }
 .logo{ isolation:isolate; }
 .clip, .tape{ z-index:2; }
+
+/* =========================================================================
+   Зажим планшета (шапка) — один и тот же элемент на всех страницах
+   ========================================================================= */
+.masthead{
+  margin:-34px -30px 30px -62px;
+  padding:16px 44px 18px 66px;
+  border-radius:8px 8px 4px 4px;
+  border-bottom:none;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #f3f6f8 0%, var(--steel-light) 18%, var(--steel-mid) 58%, #8d99a3 82%, var(--steel-dark) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    inset 0 -3px 4px rgba(0,0,0,0.22),
+    0 10px 0 -4px rgba(114,127,138,0.55),
+    0 14px 14px -6px rgba(40,26,12,0.4);
+  z-index:5;
+}
+.masthead::after{
+  content:"";
+  position:absolute;
+  left:24px; right:24px; bottom:-9px;
+  height:10px;
+  border-radius:0 0 10px 10px;
+  background: linear-gradient(180deg, var(--steel-mid), var(--steel-dark));
+  box-shadow: inset 0 -2px 3px rgba(0,0,0,0.3), 0 3px 4px rgba(40,26,12,0.25);
+}
+.clamp-rivet{
+  position:absolute;
+  top:50%;
+  width:11px; height:11px;
+  margin-top:-5px;
+  border-radius:50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0, #d6dde2 30%, var(--steel-dark) 75%);
+  box-shadow: 0 1px 1px rgba(0,0,0,0.45), inset 0 -1px 1px rgba(0,0,0,0.25);
+}
+.clamp-rivet--left{ left:22px; }
+.clamp-rivet--right{ right:18px; }
+.clamp-spring{
+  position:absolute;
+  left:50%; top:-10px;
+  width:120px; height:14px;
+  margin-left:-60px;
+  border-radius:7px 7px 0 0;
+  background: repeating-linear-gradient(90deg, var(--steel-dark) 0 3px, var(--steel-light) 3px 6px);
+  box-shadow: 0 -1px 2px rgba(0,0,0,0.25);
+  opacity:0.9;
+}
+
+.masthead .logo{
+  color:#3b4650;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.7), 0 -1px 0 rgba(0,0,0,0.25);
+  letter-spacing:2.5px;
+  font-size:22px;
+}
+.masthead .logo::after{ color:var(--ink-red); text-shadow:none; font-size:17px; margin-top:-6px; }
+.masthead .logo:hover,
+.masthead .logo:focus-visible{ color:var(--ink-red); }
+
+/* штамп даты — бумажный ярлычок, зажатый под металлом */
+.masthead .date-stamp{
+  background:var(--paper-white);
+  box-shadow: 1px 2px 0 rgba(0,0,0,0.15);
+}
+.masthead .week-badge{ background:var(--paper-white); box-shadow: 1px 2px 0 rgba(0,0,0,0.12); }
+
+/* навигация и кнопки — выбитые в металле пластины */
+.masthead .main-nav{
+  gap:2px;
+  padding:3px;
+  border-radius:8px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(255,255,255,0.18));
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.6);
+}
+.masthead .nav-link,
+.masthead .user-badge,
+.masthead .btn-logout{
+  border:1px solid rgba(60,70,80,0.35);
+  background: linear-gradient(180deg, #f7f9fa 0%, #dfe5e9 55%, #c9d1d7 100%);
+  color:#3b4650;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.18);
+  transition: background .2s ease, color .2s ease, box-shadow .2s ease, transform .15s ease;
+}
+.masthead .nav-link{ border-radius:6px; padding:7px 12px; }
+.masthead .nav-link:hover,
+.masthead .user-badge:hover,
+.masthead .btn-logout:hover{
+  background: linear-gradient(180deg, #ffffff 0%, #e9eef1 55%, #d4dbe0 100%);
+  color:var(--ink-navy);
+}
+.masthead .nav-link:active,
+.masthead .user-badge:active,
+.masthead .btn-logout:active{
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,0.25);
+}
+.masthead .nav-link.is-active{
+  background: linear-gradient(180deg, #a84536 0%, var(--ink-red) 60%, #7f2f25 100%);
+  border-color:#6e281f;
+  color:var(--paper-cream);
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.35);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.5);
+}
+.masthead .nav-link.is-active::after{ display:none; }
+.masthead .user-avatar{ box-shadow: inset 0 1px 2px rgba(0,0,0,0.35); }
+.masthead .user-badge-group{ color:#5a6670; }
+.masthead .mast-user .btn-primary{ box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 1px 2px rgba(0,0,0,0.25); }
+
+/* =========================================================================
+   Перелистывание листа
+   ========================================================================= */
+.page-main{ perspective:1400px; }
+.sheet-flip{
+  transform-origin: 50% 0;
+  animation: sheet-in .34s cubic-bezier(.22,.9,.32,1.15) both;
+}
+@keyframes sheet-in{
+  0%{ opacity:0; transform: rotateX(-24deg) translateY(-14px); filter: drop-shadow(0 16px 10px rgba(40,26,12,0.25)); }
+  60%{ opacity:1; }
+  100%{ opacity:1; transform: none; filter: none; }
+}
+
+/* =========================================================================
+   Шрифты: рукописные пометки и штампы
+   ========================================================================= */
+.status-card{ font-size:18px; line-height:1.3; }
+.absence-hint, .week-empty{ font-size:17px; }
+.updated-stamp{ font-family:var(--hand); font-size:16px; opacity:0.8; }
+.day{ font-size:11px; letter-spacing:1px; }
+.changed-stamp{ font-size:9.5px; letter-spacing:0.5px; padding:3px 6px; }
+.week-badge{ font-size:11px; letter-spacing:0.5px; }
+.absence-stat-label{ font-size:10.5px; letter-spacing:0.4px; }
+.calendar-weekday{ font-size:9.5px; letter-spacing:0.3px; }
+.today-flag{ font-size:10px; letter-spacing:0.3px; }
+.alert-mark{ font-size:12px; }
+.pair-num{ font-family:var(--display); }
+.subject{ letter-spacing:-0.1px; }
+
+@media (max-width:880px){
+  .masthead{ margin:-26px -16px 26px; padding:14px 34px 16px; }
+  .masthead .main-nav{ order:3; width:100%; overflow-x:auto; }
+  .clamp-spring{ display:none; }
+}
+@media (max-width:540px){
+  .masthead{ margin:-22px -12px 24px; padding:12px 28px 14px; }
+  .masthead .nav-link{ padding:6px 9px; font-size:12.5px; }
+}
+@media (prefers-reduced-motion: reduce){
+  .sheet-flip{ animation:none; }
+}
+
+/* =========================================================================
+   Полоса инструментов: ничего не прыгает
+   ========================================================================= */
+.today-flag.is-hidden{ visibility:hidden; pointer-events:none; }
+.date-label{ display:inline-block; min-width:9.5ch; text-align:center; }
+.refresh-box{ display:flex; flex-direction:column; align-items:center; gap:2px; min-width:96px; }
+.refresh-box .updated-stamp{ font-size:14px; line-height:1; white-space:nowrap; }
+.day, .week-badge, .changed-stamp, .today-flag, .absence-stat-label, .calendar-weekday{ text-transform:uppercase; }
+.day{ font-size:12px; letter-spacing:1.6px; }
+.week-badge{ font-size:12.5px; letter-spacing:1.2px; }
+.changed-stamp{ font-size:11px; letter-spacing:1px; }
+.today-flag{ font-size:11.5px; letter-spacing:0.8px; }
+.absence-stat-label{ font-size:12px; letter-spacing:1px; }
+.calendar-weekday{ font-size:11px; letter-spacing:0.8px; }
+.alert-mark{ font-size:14px; font-weight:700; }
+@media (max-width:540px){
+  .refresh-box{ min-width:0; }
+  .refresh-box .updated-stamp{ display:block; font-size:12.5px; }
+}
+
+/* =========================================================================
+   Масштаб интерфейса и разгрузка «Недели»
+   ========================================================================= */
+.desk{ zoom:1.04; }
+.cookie-notice{ zoom:1.04; }
+
+.week-grid{ gap:18px; }
+.week-day{ padding:14px 16px 16px; gap:0; }
+.week-day-head{ font-size:13px; padding-bottom:8px; margin-bottom:4px; }
+.week-day-link{ font-size:18px; letter-spacing:0.5px; }
+.week-pair{
+  grid-template-columns:30px 1fr;
+  gap:10px;
+  padding:10px 0;
+}
+.week-pair + .week-pair{ border-top:1px dashed var(--line-soft); }
+.week-pair-num{ font-size:22px; line-height:1.1; }
+.week-pair-subject{ font-size:15px; line-height:1.3; margin-bottom:6px; }
+.week-pair-meta{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.week-pair-meta .room{ font-size:12px; padding:3px 8px; }
+.week-pair-teacher{ font-size:13px; color:var(--ink-navy-soft); }
+.week-empty{ padding:10px 0 2px; }
+
+@media (max-width:1180px){
+  .week-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width:640px){
+  .week-grid{ grid-template-columns:1fr; }
+}
+
+/* Пропуски на «Неделе» */
+.week-day-date{ display:flex; align-items:baseline; gap:8px; }
+.week-day-hours{ font-family:var(--hand); font-size:16px; color:var(--ink-red); }
+.week-pair--missed,
+.week-pair--late{
+  margin:2px -10px;
+  padding:10px 10px 10px 8px;
+  border-radius:4px;
+  border-left:4px solid;
+  border-top:none !important;
+}
+.week-pair--missed{
+  background: rgba(156,59,46,0.10);
+  border-left-color:var(--ink-red);
+  box-shadow: inset 0 0 0 1px rgba(156,59,46,0.25);
+}
+.week-pair--late{
+  background: rgba(169,120,31,0.12);
+  border-left-color:var(--ink-mustard);
+  box-shadow: inset 0 0 0 1px rgba(169,120,31,0.28);
+}
+.week-pair--missed + .week-pair,
+.week-pair--late + .week-pair{ border-top:none; }
+.week-pair--missed .week-pair-subject{ text-decoration: line-through 2.5px rgba(156,59,46,0.7); }
+.week-pair--missed .week-pair-num{ color:var(--ink-red); }
+.week-pair--late .week-pair-num{ color:var(--ink-mustard); }
+.absence-stamp{
+  font-family:var(--stamp);
+  font-size:11.5px;
+  font-weight:700;
+  background:var(--paper-white);
+  letter-spacing:1px;
+  text-transform:uppercase;
+  padding:2px 6px;
+  border-radius:3px;
+  border:1.5px solid currentColor;
+  transform:rotate(3deg);
+  white-space:nowrap;
+  text-decoration:none;
+  display:inline-block;
+}
+.absence-stamp--missed{ color:var(--ink-red); }
+.absence-stamp--late{ color:var(--ink-mustard); }

@@ -3,17 +3,19 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useScheduleContext } from '../providers/ScheduleProvider';
+import { useAuthContext } from '../providers/AuthProvider';
 import PageToolbar from '../../components/PageToolbar';
 import * as api from '../../lib/api';
 import { addDaysIso, formatDateShort, formatDayName, toIsoDate, weekStartIso } from '../../lib/date';
 import { joinList, pickSlot } from '../../lib/schedule';
-import type { WeekDay } from '../../lib/api';
+import type { Absence, WeekDay } from '../../lib/api';
 import SubjectText from '../../components/SubjectText';
 
 const WORK_DAYS = 6;
 
 export default function WeekPage() {
   const { group, date, setDate } = useScheduleContext();
+  const { user } = useAuthContext();
   const weekStart = weekStartIso(date);
   const weekEnd = addDaysIso(weekStart, WORK_DAYS - 1);
   const key = group ? `${group}|${weekStart}` : null;
@@ -33,6 +35,30 @@ export default function WeekPage() {
 
     return () => controller.abort();
   }, [key, group, weekStart]);
+
+  const absencesKey = user && group && user.group === group ? `${user.id}|${weekStart}` : null;
+  const [loadedAbsences, setLoadedAbsences] = useState<{ key: string; items: Absence[] } | null>(null);
+
+  useEffect(() => {
+    if (!absencesKey) return;
+
+    let cancelled = false;
+
+    api.fetchAbsences(weekStart, weekEnd)
+      .then((items) => {
+        if (!cancelled) setLoadedAbsences({ key: absencesKey, items });
+      })
+      .catch(() => null);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [absencesKey, weekStart, weekEnd]);
+
+  const absenceByPair = new Map(
+    (absencesKey && loadedAbsences?.key === absencesKey ? loadedAbsences.items : [])
+      .map((a) => [`${a.date}|${a.pairNumber}`, a] as const)
+  );
 
   const current = loaded?.key === key ? loaded : null;
   const result = current?.days ?? null;
@@ -62,32 +88,52 @@ export default function WeekPage() {
               .map((pair) => ({ pair, slot: pickSlot(pair, schedule?.weekType) }))
               .filter((item) => item.slot);
 
+            const dayHours = pairs.reduce(
+              (sum, { pair }) => sum + (absenceByPair.get(`${day}|${pair.pairNumber}`)?.hours ?? 0),
+              0
+            );
+
             return (
               <section key={day} className={`week-day${day === today ? ' is-today' : ''}`}>
                 <header className="week-day-head">
                   <Link href="/" className="week-day-link" onClick={() => setDate(day)}>
                     {formatDayName(day)}
                   </Link>
-                  <span className="mono">{formatDateShort(day)}</span>
+                  <span className="week-day-date">
+                    {dayHours > 0 && <span className="week-day-hours" title="Пропущено часов">−{dayHours} ч</span>}
+                    <span className="mono">{formatDateShort(day)}</span>
+                  </span>
                 </header>
 
                 {!schedule && <p className="week-empty">Нет данных</p>}
                 {schedule && pairs.length === 0 && <p className="week-empty">Занятий нет</p>}
 
-                {pairs.map(({ pair, slot }) => (
-                  <div key={pair.pairNumber} className={`week-pair${pair.hasChanges ? ' pair--changed' : ''}`}>
+                {pairs.map(({ pair, slot }) => {
+                  const absence = absenceByPair.get(`${day}|${pair.pairNumber}`);
+                  return (
+                  <div
+                    key={pair.pairNumber}
+                    className={`week-pair${pair.hasChanges ? ' pair--changed' : ''}${absence ? ` week-pair--${absence.type.toLowerCase()}` : ''}`}
+                  >
                     <span className="week-pair-num">{pair.pairNumber}</span>
                     <div>
                       <div className="week-pair-subject">
                         <SubjectText subjects={slot?.subjects} />
                         {pair.hasChanges && <span className="changed-stamp">замена</span>}
+                        {absence && (
+                          <span className={`absence-stamp absence-stamp--${absence.type.toLowerCase()}`}>
+                            {absence.type === 'MISSED' ? 'пропуск' : 'опоздание'}
+                          </span>
+                        )}
                       </div>
-                      <div className="week-pair-meta mono">
-                        {joinList(slot?.rooms)} · {joinList(slot?.teachers)}
+                      <div className="week-pair-meta">
+                        <span className="room mono">{joinList(slot?.rooms)}</span>
+                        <span className="week-pair-teacher">{joinList(slot?.teachers)}</span>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </section>
             );
           })}

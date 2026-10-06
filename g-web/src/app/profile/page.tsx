@@ -6,6 +6,7 @@ import { useAuthContext } from '../providers/AuthProvider';
 import { useScheduleContext } from '../providers/ScheduleProvider';
 import * as api from '../../lib/api';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import LogoutButton from '../../components/LogoutButton';
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -200,9 +201,7 @@ export default function ProfilePage() {
                     <button type="button" className="btn btn-ghost" onClick={() => router.push('/change-password')}>
                         Сменить пароль
                     </button>
-                    <button type="button" className="btn btn-ghost" onClick={logout}>
-                        Выйти
-                    </button>
+                    <LogoutButton className="btn btn-ghost">Выйти</LogoutButton>
                 </div>
             </div>
 

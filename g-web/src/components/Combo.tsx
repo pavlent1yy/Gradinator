@@ -6,6 +6,7 @@ const ALL_VALUE = '__all__';
 
 type Props = {
   label?: string;
+  tab?: string;
   options: string[];
   value?: string;
   onChange: (v: string) => void;
@@ -15,10 +16,9 @@ type Props = {
   allLabel?: string;
 };
 
-const STORAGE_KEY = 'gradinator.selectedGroup';
-
 export default function Combo({
   label = 'Выбрать',
+  tab = 'Группа',
   options,
   value,
   onChange,
@@ -68,9 +68,6 @@ export default function Combo({
 
   function select(sel: string) {
     onChange(sel === ALL_VALUE ? '' : sel);
-    if (sel !== ALL_VALUE) {
-      try { localStorage.setItem(STORAGE_KEY, sel); } catch {}
-    }
     setOpen(false);
   }
 
@@ -113,7 +110,7 @@ export default function Combo({
   return (
     <div id={`combo-${uid}`} className="combo combo--small" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={`combo-list-${uid}`} aria-labelledby={`combo-label-${uid}`}>
       <div className="combo-field" id={`combo-label-${uid}`}>
-        <span className="combo-tab">Группа</span>
+        <span className="combo-tab">{tab}</span>
         <button
           type="button"
           ref={toggleRef}

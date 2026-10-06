@@ -45,6 +45,7 @@ export default function PageToolbar({ showGroupPicker = true, showDate = true, s
         <div className="toolbar-group">
           <Combo
             label="Отделение"
+            tab="Отделение"
             options={departments}
             value={department}
             onChange={setDepartment}
@@ -67,24 +68,24 @@ export default function PageToolbar({ showGroupPicker = true, showDate = true, s
           <DateNav dateIso={date} onPrev={prevDate} onNext={nextDate} onPick={setDate} onToday={goToday} />
         )}
         {showRefresh && (
-          <span className="updated-stamp mono" aria-live="polite">
-            {updatedAt ? `обновлено ${updatedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : 'обновлено —'}
-          </span>
-        )}
-        {showRefresh && (
-          <button
-            className={`icon-btn${loading ? ' btn-spin' : ''}`}
-            aria-label="Обновить расписание"
-            title="Обновить"
-            onClick={refresh}
-            aria-busy={loading}
-            type="button"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 12a9 9 0 1 0-3.5 6.9" />
-              <polyline points="21 3 21 9 15 9" />
-            </svg>
-          </button>
+          <div className="refresh-box">
+            <button
+              className={`icon-btn${loading ? ' btn-spin' : ''}`}
+              aria-label="Обновить расписание"
+              title="Обновить"
+              onClick={refresh}
+              aria-busy={loading}
+              type="button"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M21 12a9 9 0 1 0-3.5 6.9" />
+                <polyline points="21 3 21 9 15 9" />
+              </svg>
+            </button>
+            <span className="updated-stamp" aria-live="polite">
+              {updatedAt ? `обновлено ${updatedAt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : 'обновлено —'}
+            </span>
+          </div>
         )}
       </div>
     </div>

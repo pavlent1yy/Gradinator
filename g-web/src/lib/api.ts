@@ -193,7 +193,13 @@ export async function fetchSchedule(
 
     const res = await fetch(url, { signal });
 
-    if (!res.ok) throw new Error(`fetchSchedule: ${res.status}`);
+    if (res.status === 404) {
+        return { error: 'Расписания на эту дату пока нет. Попробуй другой день или загляни позже.' };
+    }
+
+    if (!res.ok) {
+        throw new Error(await readErrorMessage(res, 'Не удалось загрузить расписание, сервер недоступен'));
+    }
 
     return res.json();
 }
