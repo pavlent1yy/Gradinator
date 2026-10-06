@@ -12,6 +12,23 @@
 Authorization: Bearer <accessToken>
 ```
 
+### Rate limit
+
+Лимит считается по IP клиента (за nginx и g-web — из `X-Forwarded-For`). При превышении ответ `429` с заголовком `Retry-After` (секунды):
+
+```json
+{
+  "error": "Слишком много запросов, попробуйте позже",
+  "message": "Rate limit exceeded"
+}
+```
+
+| Категория | Эндпоинты | По умолчанию |
+|---|---|---|
+| `auth` | `/core/auth/login`, `/core/auth/register` | 20 в минуту (`RATE_LIMIT_AUTH_CAPACITY`) |
+| `email` | `/core/auth/resend-verification` | 5 за 10 минут (`RATE_LIMIT_EMAIL_CAPACITY`) |
+| `general` | всё остальное | 300 в минуту (`RATE_LIMIT_GENERAL_CAPACITY`) |
+
 ---
 
 ### `POST` `/core/auth/login`
