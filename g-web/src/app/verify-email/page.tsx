@@ -21,13 +21,13 @@ export default function VerifyEmailPage() {
     const token = params.get('token');
     window.history.replaceState(null, '', '/verify-email');
 
-    if (!token) {
-      setState('error');
-      setMessage('В ссылке отсутствует токен подтверждения.');
-      return;
-    }
-
     (async () => {
+      if (!token) {
+        setState('error');
+        setMessage('В ссылке отсутствует токен подтверждения.');
+        return;
+      }
+
       try {
         const response = await fetch('/api/core/auth/verify-email', {
           method: 'POST',

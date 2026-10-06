@@ -13,10 +13,10 @@ type Props = {
 
 function monthCells(year: number, month: number) {
   const first = new Date(year, month, 1);
-  const lead = (first.getDay() + 6) % 7;
+  const lead = first.getDay() === 0 ? 0 : (first.getDay() + 6) % 7;
   const cells: (string | null)[] = [];
 
-  for (let i = 0; i < Math.min(lead, 6); i++) cells.push(null);
+  for (let i = 0; i < lead; i++) cells.push(null);
 
   const days = new Date(year, month + 1, 0).getDate();
   for (let day = 1; day <= days; day++) {

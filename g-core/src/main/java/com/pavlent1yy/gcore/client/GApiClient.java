@@ -30,13 +30,9 @@ public class GApiClient {
                 .onStatus(
                         status -> status.value() == 404,
                         (request, response) -> {
-                            try {
-                                throw new ScheduleNotFoundException(
-                                        "Нет актуальных данных для группы '" + group + "' на " + date
-                                );
-                            } catch (ScheduleNotFoundException e) {
-                                throw new RuntimeException(e);
-                            }
+                            throw new ScheduleNotFoundException(
+                                    "Нет актуальных данных для группы '" + group + "' на " + date
+                            );
                         }
                 )
                 .body(ScheduleResponse.class);

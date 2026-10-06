@@ -1,0 +1,42 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Выкатка на прод
+    needs: ci
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PROD_URL }}
+    steps:
+      - name: Деплой по SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          fingerprint: ${{ secrets.DEPLOY_HOST_FINGERPRINT }}
+          command_timeout: 40m
+          script: |
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+            sh deploy/deploy.sh
+
+      - name: Проверка снаружи
+        if: vars.PROD_URL != ''
+        run: |
+          curl -fsS --retry 6 --retry-delay 10 --retry-all-errors -o /dev/null "${{ vars.PROD_URL }}/"
+          curl -fsS --retry 6 --retry-delay 10 --retry-all-errors -o /dev/null "${{ vars.PROD_URL }}/api/core/schedule/groups"

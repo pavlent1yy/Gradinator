@@ -62,7 +62,7 @@ public class OAuth2AuthenticationSuccessHandler
 
         response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.accessCookie(tokens.accessToken()).toString());
         response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.refreshCookie(tokens.refreshToken()).toString());
-        response.sendRedirect(frontendUrl + "/profile");
+        response.sendRedirect(frontendUrl + "/absences");
     }
 
     private User getOrCreateUser(OAuth2User oauthUser, String registrationId, String accessToken) {

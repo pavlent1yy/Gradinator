@@ -81,7 +81,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(new MockHttpServletRequest(), response, authentication);
 
-        assertThat(response.getRedirectedUrl()).isEqualTo("http://front/profile");
+        assertThat(response.getRedirectedUrl()).isEqualTo("http://front/absences");
         verify(tokenService).createSession(user);
     }
 
@@ -95,7 +95,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
 
         handler.onAuthenticationSuccess(new MockHttpServletRequest(), response, authentication);
 
-        assertThat(response.getRedirectedUrl()).isEqualTo("http://front/profile");
+        assertThat(response.getRedirectedUrl()).isEqualTo("http://front/absences");
         verify(oauthAccountService, times(2)).getOrCreateUser(oauthUser, "google", "token");
     }
 

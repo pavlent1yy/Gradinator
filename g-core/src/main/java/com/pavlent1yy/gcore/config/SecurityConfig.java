@@ -1,6 +1,7 @@
 package com.pavlent1yy.gcore.config;
 
 
+import com.pavlent1yy.gcore.controller.GApiProxyController;
 import com.pavlent1yy.gcore.handler.OAuth2AuthenticationSuccessHandler;
 import com.pavlent1yy.gcore.service.oauth.ProviderOAuth2UserService;
 import com.pavlent1yy.gcore.service.oauth.VkIdTokenParametersConverter;
@@ -22,6 +23,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
@@ -52,6 +55,9 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.GET, GApiProxyController.PUBLIC_PATHS).permitAll()
                         .requestMatchers(
                                 "/core/schedule",
                                 "/core/schedule/**",

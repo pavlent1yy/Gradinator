@@ -83,6 +83,7 @@ export default function useSchedule(
     if (stored) {
       initializedGroup.current = true;
       autoAppliedPreferred.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGroupState(stored);
     }
   }, []);
@@ -147,6 +148,7 @@ export default function useSchedule(
 
     if (groups.includes(preferredGroup)) {
       autoAppliedPreferred.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGroupState(preferredGroup);
     }
   }, [preferredGroup, groups]);
@@ -177,16 +179,17 @@ export default function useSchedule(
         setSchedule(data as Schedule);
         setUpdatedAt(new Date());
       }
-    } catch (e: any) {
-      if (e?.name === 'AbortError') return;
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       if (id !== requestId.current) return;
-      setError(e?.message ?? String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       if (id === requestId.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (scheduleEnabled && group) load(group, date);
   }, [scheduleEnabled, group, date, load]);
 
@@ -246,6 +249,7 @@ export default function useSchedule(
       warning,
       updatedAt,
       setGroup,
+      setDepartment,
       setDate,
       prevDate,
       nextDate,

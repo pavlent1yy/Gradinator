@@ -260,3 +260,22 @@ G-Core предоставляет клиентский доступ к API ра�
 | `GET` | `/core/schedule/rooms` | аудитории (`А203,М106` разбивается на две) |
 | `GET` | `/core/schedule/current-weektype` | `{label, weekType}` из g-api |
 | `GET` | `/core/schedule/week?group=&date=` | неделя пн–сб одним запросом, прокси к g-api `/api/schedule/week`: `[{date, schedule \| null}]` |
+
+---
+
+## Публичный API g-api через сайт
+
+Все неадминские эндпоинты g-api доступны через сайт по **тем же путям**, что и в g-api: `https://<домен>/api/...`.
+Next переписывает `/api/X` в g-core `/X`, а `GApiProxyController` пересылает запрос в g-api `/api/X` и возвращает ответ как есть (статус, тело, `Content-Type`). Авторизация не нужна.
+
+| Путь на сайте | Куда уходит |
+|---|---|
+| `/api/schedule`, `/api/schedule/today`, `/tomorrow`, `/yesterday`, `/week`, `/current-weektype` | g-api `/api/schedule/...` |
+| `/api/groups`, `/api/groups/departments`, `/find-department`, `/department-names` | g-api `/api/groups/...` |
+| `/api/teachers`, `/api/subjects`, `/api/rooms` | g-api справочники |
+
+- Только `GET` и только перечисленные пути: `/api/admin/**` и всё прочее через сайт недоступно (`401`).
+- Пересылаются только параметры `group` и `date`, остальные отбрасываются.
+- Успешные ответы кэшируются в g-core на 60 секунд, ошибки — нет. Если g-api недоступен — `502 {"error": "Сервис расписания недоступен"}`.
+
+Ошибки g-api в эндпоинтах `/core/schedule/**` тоже пробрасываются с исходным статусом и текстом (`400`, `404`), а не превращаются в `500`/`401`.

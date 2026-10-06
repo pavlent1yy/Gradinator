@@ -1,5 +1,6 @@
 package com.pavlent1yy.gradinator.config.security;
 
+import jakarta.servlet.DispatcherType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,7 @@ class SecurityConfigTest {
     @RestController
     static class StubController {
         @GetMapping({"/api/schedule", "/api/schedule/today", "/api/groups", "/api/groups/departments",
-                "/api/teachers", "/api/subjects", "/api/rooms", "/api/admin/snapshots", "/api/secret"})
+                "/api/teachers", "/api/subjects", "/api/rooms", "/api/admin/snapshots", "/api/secret", "/error"})
         String ok() {
             return "ok";
         }
@@ -76,5 +77,14 @@ class SecurityConfigTest {
                 .andExpect(header().string("X-Frame-Options", "DENY"))
                 .andExpect(header().string("X-Content-Type-Options", "nosniff"))
                 .andExpect(header().string("Referrer-Policy", "no-referrer"));
+    }
+
+    @Test
+    void errorPageIsOpenSoClientErrorsAreNotTurnedInto403() throws Exception {
+        mvc.perform(get("/error")).andExpect(status().isOk());
+        mvc.perform(get("/api/secret").with(request -> {
+            request.setDispatcherType(DispatcherType.ERROR);
+            return request;
+        })).andExpect(status().isOk());
     }
 }

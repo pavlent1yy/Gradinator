@@ -67,9 +67,8 @@ class GApiClientTest {
                 .andRespond(withStatus(HttpStatus.NOT_FOUND));
 
         assertThatThrownBy(() -> client.getSchedule("X", LocalDate.of(2026, 10, 5)))
-                .isInstanceOf(RuntimeException.class)
-                .hasCauseInstanceOf(ScheduleNotFoundException.class)
-                .hasRootCauseMessage("Нет актуальных данных для группы 'X' на 2026-10-05");
+                .isInstanceOf(ScheduleNotFoundException.class)
+                .hasMessage("Нет актуальных данных для группы 'X' на 2026-10-05");
     }
 
     @Test

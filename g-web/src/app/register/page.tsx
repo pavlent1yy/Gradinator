@@ -68,8 +68,8 @@ export default function RegisterPage() {
       setServerMessage('Мы отправили письмо со ссылкой подтверждения. Проверь также папку «Спам».');
       setPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
-      setServerMessage(err?.message ?? String(err));
+    } catch (err: unknown) {
+      setServerMessage(err instanceof Error ? err.message : String(err));
     } finally {
       setSubmitting(false);
     }

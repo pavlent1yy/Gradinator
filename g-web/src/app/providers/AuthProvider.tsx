@@ -49,29 +49,9 @@ export function AuthProvider({
     const restoreSession = useCallback(async () => {
 
         try {
-            const me = await api.fetchMe();
-
-            setUser(me);
-
-            return;
-
+            setUser(await api.fetchMe());
         } catch {
-            // access token отсутствует
-            // или истёк
-        }
-
-        try {
-
-            await api.refreshTokens();
-
-            const me = await api.fetchMe();
-
-            setUser(me);
-
-        } catch {
-
             setUser(null);
-
         }
 
     }, []);
@@ -109,10 +89,10 @@ export function AuthProvider({
 
             return true;
 
-        } catch (e: any) {
+        } catch (e: unknown) {
 
             setAuthError(
-                e.message ?? 'Не удалось войти'
+                e instanceof Error ? e.message : 'Не удалось войти'
             );
 
             return false;
