@@ -54,7 +54,7 @@ jobs:
           ssh_options=(-i "$ssh_dir/key" -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$ssh_dir/known_hosts" -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=20)
           for service in g-api g-core g-web; do
             echo "Loading $service image for $GITHUB_SHA"
-            gzip -dc "images/$service.tar.gz" | ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" load
+            ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" load < "images/$service.tar.gz"
           done
           ssh "${ssh_options[@]}" "$DEPLOY_USER@$DEPLOY_HOST" "deploy $GITHUB_SHA"
       - name: Проверка снаружи
