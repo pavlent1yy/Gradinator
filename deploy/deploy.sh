@@ -31,7 +31,7 @@ done
 $compose config --quiet
 
 # Keep a private pre-migration dump; application images never contain credentials.
-backup_dir="/home/yor/backups/gradinator-deploy-$(date +%Y%m%d%H%M%S)"
+backup_dir="${DEPLOY_BACKUP_ROOT:-/home/yor/backups}/gradinator-deploy-$(date +%Y%m%d%H%M%S)"
 umask 077
 mkdir -p "$backup_dir"
 cp .env "$backup_dir/production.env"

@@ -12,6 +12,13 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  deployment:
+    name: Deployment safety checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh deploy/test-deploy.sh
+
   backend:
     name: Тесты ${{ matrix.module }}
     runs-on: ubuntu-latest
@@ -67,7 +74,7 @@ jobs:
   docker:
     name: Сборка образов
     if: github.event_name != 'push' || github.ref != 'refs/heads/develop'
-    needs: [backend, web]
+    needs: [backend, web, deployment]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
