@@ -72,7 +72,7 @@ public class PasswordResetService {
             try {
                 sendMessage(user.getEmail(), rawToken);
             } catch (MessagingException | MailException e) {
-                log.error("Не удалось отправить письмо сброса пароля: userId={}", user.getId(), e);
+                log.error("Could not send password reset mail: {}", e.getClass().getSimpleName());
             }
         });
     }

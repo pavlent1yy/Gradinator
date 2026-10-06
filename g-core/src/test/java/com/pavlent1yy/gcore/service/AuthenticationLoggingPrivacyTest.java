@@ -10,6 +10,7 @@ import com.pavlent1yy.gcore.entity.User;
 import com.pavlent1yy.gcore.enums.Role;
 import com.pavlent1yy.gcore.repository.RefreshSessionRepository;
 import com.pavlent1yy.gcore.repository.UserRepository;
+import com.pavlent1yy.gcore.repository.PasswordResetTokenRepository;
 import com.pavlent1yy.gcore.service.jwt.JwtRefreshTokenService;
 import com.pavlent1yy.gcore.service.jwt.JwtService;
 import com.pavlent1yy.gcore.service.jwt.TokenService;
@@ -21,16 +22,25 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
+import org.springframework.mail.MailSendException;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.util.ReflectionTestUtils;
+import jakarta.mail.Session;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Properties;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class AuthenticationLoggingPrivacyTest {
@@ -50,6 +60,27 @@ class AuthenticationLoggingPrivacyTest {
     @Mock private EmailVerificationService emailVerificationService;
     @Mock private TokenService tokenService;
     @InjectMocks private AuthService authService;
+    @Mock private PasswordResetTokenRepository passwordResetTokenRepository;
+    @Mock private JavaMailSender mailSender;
+    @InjectMocks private PasswordResetService passwordResetService;
+
+    @Test
+    void passwordResetMailFailureDoesNotLogRecipientOrExceptionSecrets() {
+        ReflectionTestUtils.setField(passwordResetService, "tokenTtl", Duration.ofHours(1));
+        ReflectionTestUtils.setField(passwordResetService, "publicUrl", "https://example.invalid");
+        ReflectionTestUtils.setField(passwordResetService, "mailFrom", "no-reply@example.invalid");
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(user()));
+        when(mailSender.createMimeMessage()).thenReturn(new MimeMessage(Session.getInstance(new Properties())));
+        doThrow(new MailSendException("Recipient " + EMAIL + " reset-token-canary"))
+                .when(mailSender).send(any(MimeMessage.class));
+        try (CapturedLog capture = new CapturedLog(PasswordResetService.class)) {
+            passwordResetService.requestReset(EMAIL);
+            capture.assertMessages("Could not send password reset mail: MailSendException");
+            capture.assertNoPersonalData();
+            assertThat(capture.appender.list).allSatisfy(event ->
+                    assertThat(event.getFormattedMessage()).doesNotContain("reset-token-canary"));
+        }
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
