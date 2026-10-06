@@ -12,6 +12,13 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  deployment:
+    name: Deployment safety checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sh deploy/test-deploy.sh
+
   backend:
     name: Тесты ${{ matrix.module }}
     runs-on: ubuntu-latest
@@ -67,7 +74,7 @@ jobs:
   docker:
     name: Сборка образов
     if: github.event_name != 'push' || github.ref != 'refs/heads/develop'
-    needs: [backend, web]
+    needs: [backend, web, deployment]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -90,6 +97,17 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           build-args: ${{ matrix.args }}
+          tags: gradinator-${{ matrix.image }}:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+          outputs: type=docker,dest=/tmp/${{ matrix.image }}.tar
           push: false
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      - name: Compress deployment image
+        run: gzip -1 /tmp/${{ matrix.image }}.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deploy-image-${{ matrix.image }}
+          path: /tmp/${{ matrix.image }}.tar.gz
+          compression-level: 0
+          retention-days: 2

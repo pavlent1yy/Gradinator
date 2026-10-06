@@ -57,13 +57,13 @@ public class AuthService {
     @Transactional
     public UserResponse register(RegisterRequest request){
 
-        log.debug("Start user registration: email={}", request.getEmail());
+        log.debug("Start user registration");
 
         String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
         PasswordPolicy.validate(request.getPassword());
 
         if (userRepository.findByEmail(normalizedEmail).isPresent()){
-            log.warn("Registration failed: user already exists, email={}", request.getEmail());
+            log.warn("Registration failed: user already exists");
             throw new UserAlreadyExistsException("Аккаунт с такой почтой уже есть. Войди или восстанови пароль");
         }
 
@@ -92,13 +92,13 @@ public class AuthService {
         if (emailVerificationEnabled) {
             emailVerificationService.sendVerificationEmail(user);
         } else {
-            log.debug("Email verification disabled: auto-enable user, email={}", user.getEmail());
+            log.debug("Email verification disabled: auto-enable user");
             user.setEnabled(true);
         }
 
         userRepository.save(user);
 
-        log.debug("User registered: email={}, enabled={}", user.getEmail(), user.getEnabled());
+        log.debug("User registered: enabled={}", user.getEnabled());
         return new UserResponse(user.getId(), user.getEmail(), user.getGroup(), user.getDepartment(), user.getRole(), user.getPasswordHash() != null);
     }
 
@@ -139,7 +139,7 @@ public class AuthService {
                 .orElseThrow(() -> new InvalidRefreshTokenException("Сессия не найдена, войди заново"));
 
         if (session.getRevokedAt() != null) {
-            log.warn("Reuse of revoked refresh token, revoking all sessions: userId={}", session.getUser().getId());
+            log.warn("Reuse of revoked refresh token, revoking all sessions");
             refreshSessionRepository.deleteAllByUser_Id(session.getUser().getId());
             throw new InvalidRefreshTokenException("Сессия завершена, войди заново");
         }

@@ -18,15 +18,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        log.debug("Attempt to load user by email: {}", email);
+        log.debug("Attempt to load user for authentication");
 
         return userRepository.findByEmail(EmailNormalizer.normalize(email))
                 .map(user -> {
-                    log.debug("User found: email={}, id={}", user.getEmail(), user.getId());
+                    log.debug("User found for authentication");
                     return new UserDetailsImpl(user);
                 })
                 .orElseThrow(() -> {
-                    log.warn("User not found during authentication: email={}", email);
+                    log.warn("User not found during authentication");
                     return new UsernameNotFoundException("Invalid credentials");
                 });
     }

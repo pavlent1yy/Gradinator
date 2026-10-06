@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.ResponseCookie;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -42,6 +43,9 @@ class OAuth2AuthenticationSuccessHandlerTest {
     @Mock
     private OAuth2AuthorizedClientService authorizedClientService;
 
+    @Mock
+    private ObjectProvider<OAuth2AuthorizedClientService> authorizedClientServiceProvider;
+
     @InjectMocks
     private OAuth2AuthenticationSuccessHandler handler;
 
@@ -59,6 +63,7 @@ class OAuth2AuthenticationSuccessHandlerTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(handler, "frontendUrl", "http://front");
+        when(authorizedClientServiceProvider.getObject()).thenReturn(authorizedClientService);
 
         when(authentication.getPrincipal()).thenReturn(oauthUser);
         when(authentication.getAuthorizedClientRegistrationId()).thenReturn("google");
