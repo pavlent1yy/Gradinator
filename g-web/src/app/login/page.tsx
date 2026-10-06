@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '../providers/AuthProvider';
 
-const OAUTH_ERROR_MESSAGE = 'Не удалось войти через Google/GitHub. Попробуйте ещё раз.';
+const RU_OAUTH_ENABLED = false;
+
+const OAUTH_ERROR_MESSAGE = 'Не удалось войти через Google/GitHub. Попробуй ещё раз.';
 
 export default function LoginPage() {
   return (
@@ -30,7 +32,7 @@ function LoginForm() {
     clearAuthError();
 
     if (!email.trim() || !password) {
-      setClientMessage('Укажите email и пароль');
+      setClientMessage('Укажи email и пароль');
       return;
     }
 
@@ -46,7 +48,7 @@ function LoginForm() {
   return (
     <section className="auth-panel" aria-labelledby="login-title">
       <h1 id="login-title" className="auth-title">Вход</h1>
-      <p className="auth-lead">Войдите, чтобы продолжить работу с расписанием.</p>
+      <p className="auth-lead">Войди, чтобы продолжить работу с расписанием.</p>
 
       <form className="auth-form" onSubmit={onSubmit}>
         <label className="field">
@@ -105,7 +107,30 @@ function LoginForm() {
             </svg>
             GitHub
           </a>
+          {RU_OAUTH_ENABLED && (
+            <>
+              <a href="/oauth2/authorization/yandex" className="btn btn-oauth">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="12" fill="#FC3F1D"/>
+                  <path fill="#fff" d="M13.32 7.66h-.93c-1.7 0-2.6.86-2.6 2.13 0 1.44.62 2.11 1.89 2.97l1.05.7-3.02 4.51H7.46l2.72-4.03c-1.56-1.12-2.44-2.2-2.44-4.05 0-2.31 1.61-3.89 4.65-3.89h3.02v11.97h-2.09V7.66z"/>
+                </svg>
+                Яндекс
+              </a>
+              <a href="/oauth2/authorization/vk" className="btn btn-oauth">
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect width="24" height="24" rx="6" fill="#0077FF"/>
+                  <path fill="#fff" d="M12.77 16.5c-4.79 0-7.52-3.28-7.63-8.75h2.4c.08 4.01 1.85 5.71 3.25 6.06V7.75h2.26v3.46c1.38-.15 2.84-1.73 3.33-3.46h2.26c-.38 2.14-1.95 3.72-3.07 4.37 1.12.53 2.92 1.91 3.6 4.38h-2.49c-.53-1.65-1.86-2.93-3.63-3.11v3.11h-.28z"/>
+                </svg>
+                VK
+              </a>
+            </>
+          )}
         </div>
+
+        <p className="auth-legal">
+          Входя через Google или GitHub впервые, ты принимаешь <Link href="/terms">соглашение</Link> и даёшь{' '}
+          <Link href="/consent">согласие на обработку данных</Link>.
+        </p>
 
         <p className="auth-switch">
           Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>

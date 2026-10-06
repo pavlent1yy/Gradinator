@@ -128,7 +128,7 @@ export async function changeGroup(
     newGroup: string
 ): Promise<void> {
 
-    const res = await fetch(
+    const res = await authFetch(
         `${API_BASE}/user/change-group`,
         {
             method: 'PUT',
@@ -146,7 +146,7 @@ export async function changeGroup(
         throw new Error(
             await readErrorMessage(
                 res,
-                'Не удалось изменить группу'
+                'Не удалось сменить группу'
             )
         );
     }
@@ -157,7 +157,7 @@ export async function changePassword(
     newPassword: string
 ): Promise<void> {
 
-    const res = await fetch(
+    const res = await authFetch(
         `${API_BASE}/user/change-password`,
         {
             method: 'PUT',
@@ -176,7 +176,7 @@ export async function changePassword(
         throw new Error(
             await readErrorMessage(
                 res,
-                'Не удалось изменить пароль'
+                'Не удалось сменить пароль'
             )
         );
     }
@@ -281,13 +281,6 @@ export async function logout(): Promise<void> {
         credentials: 'include'
     });
 
-    console.log('LOGOUT:', {
-        status: res.status,
-        url: res.url,
-        headers: Object.fromEntries(res.headers.entries()),
-        body: await res.clone().text()
-    });
-
     if (!res.ok) {
         throw new Error(
             await readErrorMessage(
@@ -357,4 +350,203 @@ export async function fetchMe(): Promise<Me> {
     }
 
     return res.json();
+}
+
+/* ---------------------------------------------------------------------- */
+/* Запросы под авторизацией: при 401 один раз обновляем сессию и повторяем */
+/* ---------------------------------------------------------------------- */
+
+async function authFetch(input: string, init?: RequestInit): Promise<Response> {
+    const res = await fetch(input, { ...init, credentials: 'include' });
+
+    if (res.status !== 401) return res;
+
+    try {
+        await refreshTokens();
+    } catch {
+        return res;
+    }
+
+    return fetch(input, { ...init, credentials: 'include' });
+}
+
+async function sendJson<T>(
+    url: string,
+    method: string,
+    body: unknown,
+    fallback: string
+): Promise<T> {
+    const res = await authFetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, fallback));
+
+    return res.json();
+}
+
+async function sendDelete(url: string, fallback: string): Promise<void> {
+    const res = await authFetch(url, { method: 'DELETE' });
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, fallback));
+}
+
+/* ---------------------------------------------------------------------- */
+/* Пропуски                                                               */
+/* ---------------------------------------------------------------------- */
+
+export type AbsenceType = 'MISSED' | 'LATE';
+
+export type Absence = {
+    id: number;
+    date: string;
+    pairNumber: number;
+    type: AbsenceType;
+    subject: string | null;
+    hours: number;
+};
+
+export type AbsencePeriodStats = {
+    from: string | null;
+    to: string | null;
+    hours: number;
+    missedPairs: number;
+    lates: number;
+};
+
+export type AbsenceStats = {
+    week: AbsencePeriodStats;
+    month: AbsencePeriodStats;
+    semester: AbsencePeriodStats;
+    total: AbsencePeriodStats;
+};
+
+export async function fetchAbsences(from: string, to: string): Promise<Absence[]> {
+    const res = await authFetch(
+        `${API_BASE}/absences?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+    );
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Не удалось загрузить пропуски'));
+
+    return res.json();
+}
+
+export async function fetchAbsenceStats(): Promise<AbsenceStats> {
+    const res = await authFetch(`${API_BASE}/absences/stats`);
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Не удалось посчитать статистику'));
+
+    return res.json();
+}
+
+export function markAbsence(
+    date: string,
+    pairNumber: number,
+    type: AbsenceType,
+    subject?: string | null
+): Promise<Absence> {
+    return sendJson(`${API_BASE}/absences`, 'PUT', { date, pairNumber, type, subject }, 'Не удалось отметить');
+}
+
+export function unmarkAbsence(date: string, pairNumber: number): Promise<void> {
+    return sendDelete(
+        `${API_BASE}/absences?date=${encodeURIComponent(date)}&pairNumber=${pairNumber}`,
+        'Не удалось снять отметку'
+    );
+}
+
+export function markAbsenceDay(date: string): Promise<Absence[]> {
+    return sendJson(`${API_BASE}/absences/day`, 'POST', { date }, 'Не удалось отметить день');
+}
+
+export function clearAbsenceDay(date: string): Promise<void> {
+    return sendDelete(
+        `${API_BASE}/absences/day?date=${encodeURIComponent(date)}`,
+        'Не удалось очистить день'
+    );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Удаление аккаунта                                                      */
+/* ---------------------------------------------------------------------- */
+
+export function deleteAccount(): Promise<void> {
+    return sendDelete(`${API_BASE}/user`, 'Не удалось удалить аккаунт');
+}
+
+/* ---------------------------------------------------------------------- */
+/* Поиск, аудитории, справочники                                          */
+/* ---------------------------------------------------------------------- */
+
+export type SearchType = 'ANY' | 'TEACHER' | 'SUBJECT' | 'ROOM';
+
+export type SearchHit = {
+    group: string;
+    pairNumber: number;
+    subjects: string[];
+    teachers: string[];
+    rooms: string[];
+    hasChanges: boolean;
+};
+
+export type FreeRooms = {
+    pairNumber: number;
+    freeRooms: string[];
+    busyRooms: string[];
+};
+
+export type DictionaryKind = 'teachers' | 'subjects' | 'rooms';
+
+const dictionaryCache = new Map<DictionaryKind, Promise<string[]>>();
+
+export function fetchDictionary(kind: DictionaryKind): Promise<string[]> {
+    let cached = dictionaryCache.get(kind);
+
+    if (!cached) {
+        cached = fetch(`${API_BASE}/schedule/${kind}`).then((res) => {
+            if (!res.ok) throw new Error(`fetchDictionary: ${res.status}`);
+            return res.json();
+        });
+        cached.catch(() => dictionaryCache.delete(kind));
+        dictionaryCache.set(kind, cached);
+    }
+
+    return cached;
+}
+
+export async function searchSchedule(
+    query: string,
+    type: SearchType,
+    dateIso: string,
+    signal?: AbortSignal
+): Promise<SearchHit[]> {
+    const params = new URLSearchParams({ q: query, type, date: dateIso });
+    const res = await fetch(`${API_BASE}/schedule/search?${params}`, { signal });
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Не удалось выполнить поиск'));
+
+    return res.json();
+}
+
+export async function fetchFreeRooms(dateIso: string, signal?: AbortSignal): Promise<FreeRooms[]> {
+    const res = await fetch(`${API_BASE}/schedule/free-rooms?date=${encodeURIComponent(dateIso)}`, { signal });
+
+    if (!res.ok) throw new Error(await readErrorMessage(res, 'Не удалось загрузить аудитории'));
+
+    return res.json();
+}
+
+let weekTypeCache: Promise<string | null> | null = null;
+
+export function fetchCurrentWeekType(): Promise<string | null> {
+    if (!weekTypeCache) {
+        weekTypeCache = fetch(`${API_BASE}/schedule/current-weektype`)
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => data?.weekType ?? null)
+            .catch(() => null);
+    }
+
+    return weekTypeCache;
 }

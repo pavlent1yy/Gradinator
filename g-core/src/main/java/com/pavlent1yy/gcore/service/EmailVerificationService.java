@@ -92,7 +92,7 @@ public class EmailVerificationService {
         OffsetDateTime now = OffsetDateTime.now();
         if (token.getExpiresAt().isBefore(now)) {
             throw new InvalidVerificationTokenException(
-                    "Срок действия ссылки истёк. Запросите новое письмо"
+                    "Срок действия ссылки истёк. Запроси новое письмо"
             );
         }
 

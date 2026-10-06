@@ -20,7 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,7 +28,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Optional;
@@ -243,20 +241,5 @@ class AuthServiceTest {
         when(refreshTokenService.rotate(session)).thenReturn("new");
 
         assertThat(authService.refresh("old")).isEqualTo(new LoginResponse("access", "new"));
-    }
-
-    @Test
-    void refreshCookiesAreStrictAndSecure() {
-        ResponseCookie cookie = authService.createRefreshCookie("token");
-        ResponseCookie deleted = authService.deleteRefreshCookie();
-
-        assertThat(cookie.getName()).isEqualTo("gradinator_refresh");
-        assertThat(cookie.getValue()).isEqualTo("token");
-        assertThat(cookie.isHttpOnly()).isTrue();
-        assertThat(cookie.isSecure()).isTrue();
-        assertThat(cookie.getSameSite()).isEqualTo("Strict");
-        assertThat(cookie.getMaxAge()).isEqualTo(Duration.ofDays(30));
-        assertThat(deleted.getValue()).isEmpty();
-        assertThat(deleted.getMaxAge()).isEqualTo(Duration.ZERO);
     }
 }

@@ -63,7 +63,7 @@ export default function VerifyEmailPage() {
       const data = await response.json().catch(() => null);
       setResendMessage(data?.message ?? 'Если аккаунт ожидает подтверждения, письмо будет отправлено.');
     } catch {
-      setResendMessage('Не удалось отправить письмо. Попробуйте позже.');
+      setResendMessage('Не удалось отправить письмо. Попробуй позже.');
     } finally {
       setResending(false);
     }
@@ -74,7 +74,7 @@ export default function VerifyEmailPage() {
       <h1 id="verify-title" className="auth-title">Подтверждение почты</h1>
       <p className="auth-lead">{message}</p>
 
-      {state === 'checking' && <div className="loading-note">Пожалуйста, подождите…</div>}
+      {state === 'checking' && <div className="loading-note">Пожалуйста, подожди…</div>}
 
       {state === 'success' && (
         <div className="auth-actions">

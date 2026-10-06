@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [group, setGroup] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [clientError, setClientError] = useState<string | null>(null);
@@ -39,6 +40,7 @@ export default function RegisterPage() {
     if (!password) return 'Пароль обязателен';
     if (password !== confirmPassword) return 'Пароли не совпадают';
     if (!/^\S+@\S+\.\S+$/.test(email)) return 'Некорректный email';
+    if (!agreed) return 'Нужно согласие с условиями';
     return null;
   }
 
@@ -63,7 +65,7 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       await api.register(payload);
-      setServerMessage('Мы отправили письмо со ссылкой подтверждения. Проверьте также папку «Спам».');
+      setServerMessage('Мы отправили письмо со ссылкой подтверждения. Проверь также папку «Спам».');
       setPassword('');
       setConfirmPassword('');
     } catch (err: any) {
@@ -76,7 +78,7 @@ export default function RegisterPage() {
   return (
     <section className="auth-panel" aria-labelledby="register-title">
       <h1 id="register-title" className="auth-title">Регистрация</h1>
-      <p className="auth-lead">Создайте аккаунт, чтобы сохранять группу и настройки.</p>
+      <p className="auth-lead">Создай аккаунт, чтобы сохранять группу и настройки.</p>
 
       <form className="auth-form" onSubmit={onSubmit}>
         <label className="field">
@@ -104,7 +106,7 @@ export default function RegisterPage() {
         </label>
 
         <label className="field">
-          <span className="field-label">Подтвердите пароль</span>
+          <span className="field-label">Подтверди пароль</span>
           <input
             className="field-input"
             type="password"
@@ -129,11 +131,20 @@ export default function RegisterPage() {
           </select>
         </label>
 
+        <label className="consent-check">
+          <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} required />
+          <span>
+            Принимаю <Link href="/terms">пользовательское соглашение</Link> и даю{' '}
+            <Link href="/consent">согласие на обработку персональных данных</Link> на условиях{' '}
+            <Link href="/privacy">политики конфиденциальности</Link>.
+          </span>
+        </label>
+
         {clientError && <div className="warning-note" role="alert">{clientError}</div>}
         {serverMessage && <div className="warning-note" role="status">{serverMessage}</div>}
 
         <div className="auth-actions">
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
+          <button type="submit" className="btn btn-primary" disabled={submitting || !agreed}>
             {submitting ? 'Отправка…' : 'Зарегистрироваться'}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => router.push('/')}>

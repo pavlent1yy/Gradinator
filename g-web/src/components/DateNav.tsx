@@ -99,7 +99,7 @@ export default function DateNav({ dateIso, onPrev, onNext, onPick, onToday }: Pr
             className="date-picker-input"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            aria-label="Выберите дату"
+            aria-label="Выбери дату"
           />
           <div className="date-picker-actions">
             <button type="button" className="date-picker-btn" onClick={onCancel}>Отмена</button>

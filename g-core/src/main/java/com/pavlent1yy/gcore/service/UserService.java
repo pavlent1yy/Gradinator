@@ -6,11 +6,16 @@ import com.pavlent1yy.gcore.dto.records.ChangeGroupRequest;
 import com.pavlent1yy.gcore.dto.records.ChangePasswordRequest;
 import com.pavlent1yy.gcore.dto.records.UserResponse;
 import com.pavlent1yy.gcore.entity.User;
+import com.pavlent1yy.gcore.repository.AbsenceRepository;
+import com.pavlent1yy.gcore.repository.EmailVerificationTokenRepository;
+import com.pavlent1yy.gcore.repository.RefreshSessionRepository;
+import com.pavlent1yy.gcore.repository.UserOAuthAccountRepository;
 import com.pavlent1yy.gcore.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +24,10 @@ public class UserService {
     private final UserRepository userRepository;
     private final ScheduleService scheduleService;
     private final PasswordEncoder passwordEncoder;
+    private final AbsenceRepository absenceRepository;
+    private final UserOAuthAccountRepository oauthAccountRepository;
+    private final RefreshSessionRepository refreshSessionRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
     private User getUserByEmail(String email){
         return userRepository.findByEmail(email)
@@ -48,7 +57,7 @@ public class UserService {
             user.setPasswordHash(passwordEncoder.encode(passwordRequest.newPassword()));
             userRepository.save(user);
         } else{
-            throw new PasswordIsIncorrect("Password is incorrect!");
+            throw new PasswordIsIncorrect("Неверный текущий пароль");
         }
     }
 
@@ -61,5 +70,17 @@ public class UserService {
         user.setGroup(newGroup);
         user.setDepartment(scheduleService.getDepartmentsByGroup(newGroup));
         userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteAccount(String email) {
+        User user = getUserByEmail(email);
+        Long userId = user.getId();
+
+        absenceRepository.deleteAllByUser_Id(userId);
+        oauthAccountRepository.deleteAllByUser_Id(userId);
+        refreshSessionRepository.deleteAllByUser_Id(userId);
+        emailVerificationTokenRepository.deleteAllByUser_Id(userId);
+        userRepository.delete(user);
     }
 }

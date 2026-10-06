@@ -46,3 +46,16 @@ export function weekTypeLabel(weekType?: string | null) {
   if (weekType === 'NUMERATOR') return 'Числитель';
   return '—';
 }
+
+export function addDaysIso(iso: string, delta: number) {
+  const d = parseIsoDate(iso) ?? new Date();
+  d.setDate(d.getDate() + delta);
+  return toIsoDate(d);
+}
+
+export function weekStartIso(iso: string) {
+  const d = parseIsoDate(iso) ?? new Date();
+  const shift = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - shift);
+  return toIsoDate(d);
+}

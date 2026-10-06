@@ -55,6 +55,14 @@ public class OAuthAccountService {
                 email = oauthUser.getAttribute("email");
             }
 
+            case YANDEX -> {
+                providerUserId = Objects.toString(
+                        oauthUser.getAttribute("id"),
+                        null
+                );
+                email = oauthUser.getAttribute("default_email");
+            }
+
             default -> throw new IllegalStateException(
                     "Неподдерживаемый OAuth provider: " + provider
             );

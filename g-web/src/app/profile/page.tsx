@@ -16,6 +16,8 @@ export default function ProfilePage() {
     const [groupMessage, setGroupMessage] = useState('');
     const [changingGroup, setChangingGroup] = useState(false);
     const [editingGroup, setEditingGroup] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState('');
 
     useEffect(() => {
         if (!initializing && !user) {
@@ -60,11 +62,29 @@ export default function ProfilePage() {
         }
     }
 
+    async function onDeleteAccount() {
+        if (!window.confirm('Удалить аккаунт? Все твои данные, включая пропуски, будут удалены без возможности восстановления.')) {
+            return;
+        }
+
+        setDeleting(true);
+        setDeleteError('');
+
+        try {
+            await api.deleteAccount();
+            await logout().catch(() => null);
+            router.replace('/');
+        } catch (error) {
+            setDeleteError(error instanceof Error ? error.message : 'Не удалось удалить аккаунт');
+            setDeleting(false);
+        }
+    }
+
     async function onChangeGroup(e: React.FormEvent) {
         e.preventDefault();
 
         if (!selectedGroup) {
-            setGroupMessage('Выберите группу.');
+            setGroupMessage('Выбери группу.');
             return;
         }
 
@@ -155,7 +175,7 @@ export default function ProfilePage() {
                                     }
                                 >
                                     <option value="">
-                                        Выберите группу
+                                        Выбери группу
                                     </option>
 
                                     {(department
@@ -226,6 +246,20 @@ export default function ProfilePage() {
                     </button>
                 </div>
             )}
+
+            <div className="danger-zone">
+                <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={onDeleteAccount}
+                    disabled={deleting}
+                >
+                    {deleting ? 'Удаление…' : 'Удалить аккаунт'}
+                </button>
+                {deleteError && (
+                    <div className="warning-note" role="alert">{deleteError}</div>
+                )}
+            </div>
         </section>
     );
 }

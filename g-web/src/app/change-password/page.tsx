@@ -37,7 +37,7 @@ export default function ChangePasswordPage() {
     e.preventDefault();
 
     if (!oldPassword || !newPassword || !confirmPassword) {
-      setMessage('Заполните все поля.');
+      setMessage('Заполни все поля.');
       return;
     }
 
@@ -74,7 +74,7 @@ export default function ChangePasswordPage() {
       </h1>
 
       <p className="auth-lead">
-        Введите текущий пароль и новый пароль.
+        Введи текущий пароль и новый пароль.
       </p>
 
       <form className="auth-form" onSubmit={onChangePassword}>

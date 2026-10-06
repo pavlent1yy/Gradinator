@@ -1,7 +1,11 @@
 package com.pavlent1yy.gcore.controller;
 
+import com.pavlent1yy.gcore.dto.records.FreeRoomsResponse;
 import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
+import com.pavlent1yy.gcore.dto.records.SearchHit;
+import com.pavlent1yy.gcore.enums.SearchType;
 import com.pavlent1yy.gcore.service.ScheduleService;
+import com.pavlent1yy.gcore.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +22,7 @@ import java.util.Map;
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
+    private final SearchService searchService;
 
     @GetMapping
     public ScheduleResponse getSchedule(@RequestParam String group, @RequestParam LocalDate date) {
@@ -42,5 +47,37 @@ public class ScheduleController {
     @GetMapping("/groups/department-names")
     public List<String> getDepartmentNames(){
         return scheduleService.getDepartmentNames();
+    }
+
+    @GetMapping("/current-weektype")
+    public Map<String, String> getCurrentWeekType() {
+        return scheduleService.getCurrentWeekType();
+    }
+
+    @GetMapping("/search")
+    public List<SearchHit> search(@RequestParam String q,
+                                  @RequestParam(defaultValue = "ANY") SearchType type,
+                                  @RequestParam LocalDate date) {
+        return searchService.search(q, type, date);
+    }
+
+    @GetMapping("/free-rooms")
+    public List<FreeRoomsResponse> getFreeRooms(@RequestParam LocalDate date) {
+        return searchService.freeRooms(date);
+    }
+
+    @GetMapping("/teachers")
+    public List<String> getTeachers() {
+        return searchService.teachers();
+    }
+
+    @GetMapping("/subjects")
+    public List<String> getSubjects() {
+        return searchService.subjects();
+    }
+
+    @GetMapping("/rooms")
+    public List<String> getRooms() {
+        return searchService.rooms();
     }
 }

@@ -34,4 +34,8 @@ public class ScheduleService {
     public List<String> getDepartmentNames(){
         return gApiClient.getDepartmentNames();
     }
+
+    public Map<String, String> getCurrentWeekType() {
+        return gApiClient.getCurrentWeekType();
+    }
 }

@@ -135,6 +135,20 @@ class OAuthAccountServiceTest {
     }
 
     @Test
+    void yandexUsesIdAndDefaultEmail() {
+        OAuth2User oauthUser = mock(OAuth2User.class);
+        when(oauthUser.getAttribute("id")).thenReturn("42");
+        when(oauthUser.getAttribute("default_email")).thenReturn("ya@yandex.ru");
+        User linked = new User();
+        UserOAuthAccount account = new UserOAuthAccount();
+        account.setUser(linked);
+        when(oauthAccountRepository.findByProviderAndProviderUserId(OAuthProvider.YANDEX, "42"))
+                .thenReturn(Optional.of(account));
+
+        assertThat(oauthAccountService.getOrCreateUser(oauthUser, "yandex", "token")).isSameAs(linked);
+    }
+
+    @Test
     void doesNotDuplicateAlreadyExistingAccountLink() {
         User existing = new User();
         when(oauthAccountRepository.findByProviderAndProviderUserId(OAuthProvider.GOOGLE, "g-5"))

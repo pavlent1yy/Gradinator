@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useMemo } from 'react';
-import { useScheduleContext } from '../app/providers/ScheduleProvider';
+import { useEffect, useState } from 'react';
 import { useAuthContext } from '../app/providers/AuthProvider';
+import { useScheduleContext } from '../app/providers/ScheduleProvider';
+import { fetchCurrentWeekType } from '../lib/api';
 import { formatDateLong, formatDayName, weekTypeLabel } from '../lib/date';
-import Combo from './Combo';
-import DateNav from './DateNav';
 
 function initialsFromEmail(email: string) {
   const name = email.split('@')[0] || email;
@@ -17,177 +16,74 @@ function initialsFromEmail(email: string) {
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const isAuthPage = pathname === '/login' || pathname === '/register';
-
   const { user, initializing, logout } = useAuthContext();
+  const { date, schedule } = useScheduleContext();
+  const [currentWeekType, setCurrentWeekType] = useState<string | null>(null);
 
-  const {
-    groups,
-    groupsByDepartment,
-    departments,
-    department,
-    setDepartment,
-    group,
-    setGroup,
-    date,
-    prevDate,
-    nextDate,
-    setDate,
-    goToday,
-    refresh,
-    loading,
-    updatedAt,
-    schedule,
-    homeGroup,
-    isOwnGroup,
-    goToOwnGroup
-  } = useScheduleContext();
+  useEffect(() => {
+    fetchCurrentWeekType().then(setCurrentWeekType);
+  }, []);
 
-  const dayLabel = useMemo(
-    () => formatDayName(date, schedule?.day),
-    [date, schedule?.day]
+  const weekLabel = weekTypeLabel(pathname === '/' ? (schedule?.weekType ?? currentWeekType) : currentWeekType);
+
+  const navLink = (href: string, label: string) => (
+    <Link href={href} className={`nav-link${pathname === href ? ' is-active' : ''}`}>
+      {label}
+    </Link>
   );
-  const dateLabel = useMemo(() => formatDateLong(date), [date]);
-  const weekLabel = useMemo(
-    () => weekTypeLabel(schedule?.weekType),
-    [schedule?.weekType]
-  );
-  // выбранное отделение фильтрует список групп; без отделения — всё как раньше
-  const visibleGroups = useMemo(
-    () => (department ? (groupsByDepartment[department] ?? groups) : groups),
-    [department, groupsByDepartment, groups]
-  );
-
-  const updatedLabel = useMemo(() => {
-    if (!updatedAt) return 'Информация от —';
-    return `Информация от ${updatedAt.toLocaleString('ru-RU')}`;
-  }, [updatedAt]);
-
-  async function onLogout() {
-    await logout();
-  }
 
   return (
-    <header className="masthead" aria-labelledby="page-title">
-      <div className="mast-row mast-row--top">
-        <div className="meta-row">
-          <div className="date-stamp">
-            <div className="day" id="day-label">{dayLabel}</div>
-            <div className="date mono" id="date-label">{dateLabel}</div>
-          </div>
-          {!isAuthPage && weekLabel !== '—' && (
-            <div className="week-badge" id="week-badge">{weekLabel}</div>
-          )}
+    <header className="masthead">
+      <Link href="/" className="logo" aria-label="GradInator, на главную">GradInator</Link>
+
+      <div className="mast-date">
+        <div className="date-stamp">
+          <div className="day">{formatDayName(date, schedule?.day)}</div>
+          <div className="date mono">{formatDateLong(date)}</div>
         </div>
-
-        <div className="mast-top">
-          <nav className="main-nav" aria-label="Основная навигация">
-            {!isAuthPage && (
-              <Link href="/" className={`nav-link${pathname === '/' ? ' is-active' : ''}`}>
-                Расписание
-              </Link>
-            )}
-            {!user && !initializing && (
-              <>
-                <Link
-                  href="/register"
-                  className={`nav-link${pathname === '/register' ? ' is-active' : ''}`}
-                >
-                  Регистрация
-                </Link>
-                <Link
-                  href="/login"
-                  className={`nav-link${pathname === '/login' ? ' is-active' : ''}`}
-                >
-                  Вход
-                </Link>
-              </>
-            )}
-            {isAuthPage && (
-              <Link href="/" className="nav-link">
-                Отмена
-              </Link>
-            )}
-          </nav>
-
-          <div className="logo" id="page-title">GradInator</div>
-
-          <div className="controls">
-            {!isAuthPage && (
-              <>
-                <button
-                  id="refreshBtn"
-                  className={`icon-btn${loading ? ' btn-spin' : ''}`}
-                  aria-label="Обновить расписание"
-                  title="Обновить"
-                  onClick={refresh}
-                  aria-busy={loading}
-                  type="button"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M21 12a9 9 0 1 0-3.5 6.9" />
-                    <polyline points="21 3 21 9 15 9" />
-                  </svg>
-                </button>
-
-                <div id="updatedAt" className="updated-note" aria-live="polite">
-                  {updatedLabel}
-                </div>
-              </>
-            )}
-
-            {!initializing && user && (
-              <div className="auth-links">
-                <button
-                  type="button"
-                  className="user-badge"
-                  onClick={() => router.push('/profile')}
-                  title="Профиль"
-                >
-                  <span className="user-avatar">{initialsFromEmail(user.email)}</span>
-                  <span className="user-badge-text">
-                    <span className="user-badge-email">{user.email}</span>
-                    <span className="user-badge-group">{user.group ?? 'без группы'}</span>
-                  </span>
-                </button>
-                <button type="button" className="btn-logout" onClick={onLogout} title="Выйти" aria-label="Выйти">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        {weekLabel !== '—' && <div className="week-badge" title="Тип текущей недели">{weekLabel}</div>}
       </div>
 
-      {!isAuthPage && (
-        <div className="mast-row mast-row--bottom">
-          <div className="group-row">
-            <Combo
-              label="Отделение"
-              options={departments}
-              value={department}
-              onChange={setDepartment}
-              includeAll
-              allLabel="Все отделения"
-            />
-            <Combo label="Выбрать группу" options={visibleGroups} value={group} onChange={setGroup} homeGroup={homeGroup} />
-            {!isOwnGroup && homeGroup && (
-              <button type="button" className="own-group-pin" onClick={goToOwnGroup}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 19V5" />
-                  <path d="M5 12l7-7 7 7" />
-                </svg>
-                Моя группа: {homeGroup}
-              </button>
-            )}
-          </div>
-          <DateNav dateIso={date} onPrev={prevDate} onNext={nextDate} onPick={setDate} onToday={goToday} />
-        </div>
-      )}
+      <nav className="main-nav" aria-label="Основная навигация">
+        {navLink('/', 'Расписание')}
+        {navLink('/week', 'Неделя')}
+        {navLink('/search', 'Поиск')}
+        {navLink('/rooms', 'Аудитории')}
+        {user && navLink('/absences', 'Пропуски')}
+      </nav>
+
+      <div className="mast-user">
+        {!initializing && !user && (
+          <>
+            {navLink('/login', 'Вход')}
+            <Link href="/register" className="btn btn-primary btn-sm">Регистрация</Link>
+          </>
+        )}
+
+        {!initializing && user && (
+          <>
+            <button
+              type="button"
+              className={`user-badge${pathname === '/profile' ? ' is-active' : ''}`}
+              onClick={() => router.push('/profile')}
+              title="Профиль"
+            >
+              <span className="user-avatar">{initialsFromEmail(user.email)}</span>
+              <span className="user-badge-text">
+                <span className="user-badge-email">{user.email}</span>
+                <span className="user-badge-group">{user.group ?? 'без группы'}</span>
+              </span>
+            </button>
+            <button type="button" className="btn-logout" onClick={() => logout()} title="Выйти" aria-label="Выйти">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
     </header>
   );
 }

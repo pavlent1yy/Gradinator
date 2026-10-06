@@ -53,7 +53,7 @@ services:
         MODULE: g-core
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: ${G_CORE_PROFILES:-prod}
       TZ: Europe/Moscow
       JAVA_TOOL_OPTIONS: -Duser.timezone=Europe/Moscow
       DB_USERNAME: ${POSTGRES_USER}
@@ -72,6 +72,13 @@ services:
       MAIL_FROM: ${MAIL_FROM:-gradinator@localhost}
       MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
       MAIL_STARTTLS: ${MAIL_STARTTLS:-true}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
+      YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
+      VK_CLIENT_ID: ${VK_CLIENT_ID:-}
     expose:
       - "9091"
     depends_on:

@@ -17,4 +17,6 @@ public interface RefreshSessionRepository
         WHERE rs.refreshTokenHash = :hash
     """)
     Optional<RefreshSession> findByRefreshTokenHash(@Param("hash") String hash);
+
+    void deleteAllByUser_Id(Long userId);
 }

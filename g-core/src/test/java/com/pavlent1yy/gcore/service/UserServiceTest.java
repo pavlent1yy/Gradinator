@@ -7,7 +7,12 @@ import com.pavlent1yy.gcore.dto.records.ChangePasswordRequest;
 import com.pavlent1yy.gcore.dto.records.UserResponse;
 import com.pavlent1yy.gcore.entity.User;
 import com.pavlent1yy.gcore.enums.Role;
+import com.pavlent1yy.gcore.repository.AbsenceRepository;
+import com.pavlent1yy.gcore.repository.EmailVerificationTokenRepository;
+import com.pavlent1yy.gcore.repository.RefreshSessionRepository;
+import com.pavlent1yy.gcore.repository.UserOAuthAccountRepository;
 import com.pavlent1yy.gcore.repository.UserRepository;
+import org.mockito.InOrder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +40,18 @@ class UserServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private AbsenceRepository absenceRepository;
+
+    @Mock
+    private UserOAuthAccountRepository oauthAccountRepository;
+
+    @Mock
+    private RefreshSessionRepository refreshSessionRepository;
+
+    @Mock
+    private EmailVerificationTokenRepository emailVerificationTokenRepository;
 
     @InjectMocks
     private UserService userService;
@@ -130,5 +147,21 @@ class UserServiceTest {
                 .isInstanceOf(PasswordIsIncorrect.class);
         verifyNoInteractions(passwordEncoder);
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteAccountRemovesAllUserDataBeforeUser() {
+        User user = user("hash");
+        user.setId(7L);
+
+        userService.deleteAccount("user@mail.ru");
+
+        InOrder order = inOrder(absenceRepository, oauthAccountRepository, refreshSessionRepository,
+                emailVerificationTokenRepository, userRepository);
+        order.verify(absenceRepository).deleteAllByUser_Id(7L);
+        order.verify(oauthAccountRepository).deleteAllByUser_Id(7L);
+        order.verify(refreshSessionRepository).deleteAllByUser_Id(7L);
+        order.verify(emailVerificationTokenRepository).deleteAllByUser_Id(7L);
+        order.verify(userRepository).delete(user);
     }
 }

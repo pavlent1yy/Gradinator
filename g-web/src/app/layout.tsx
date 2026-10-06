@@ -2,6 +2,8 @@ import './globals.css';
 import { AuthProvider } from './providers/AuthProvider';
 import { ScheduleProvider } from './providers/ScheduleProvider';
 import Header from '../components/Header';
+import CookieNotice from '../components/CookieNotice';
+import Link from 'next/link';
 import { Inter, Oswald, Roboto_Mono, Patrick_Hand, Special_Elite } from 'next/font/google';
 
 const inter = Inter({
@@ -38,7 +40,7 @@ const specialElite = Special_Elite({
 
 export const metadata = {
   title: 'GradInator — Расписание',
-  description: 'Интерфейс расписания',
+  description: 'Расписание ЯГК и учёт пропусков. Неофициальный студенческий проект.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -66,11 +68,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Header />
                 <main className="page-main">{children}</main>
                 <footer className="page-foot">
-                  <div className="foot-left mono">Источник: учебный план — 2026</div>
+                  <div className="foot-left mono">
+                    Неофициальный студенческий проект. Сверяйся с расписанием колледжа.
+                  </div>
+                  <nav className="foot-links" aria-label="Документы">
+                    <Link href="/privacy">Конфиденциальность</Link>
+                    <Link href="/consent">Согласие на ПДн</Link>
+                    <Link href="/cookies">Cookie</Link>
+                    <Link href="/terms">Соглашение</Link>
+                  </nav>
                   <div className="foot-right foot-stamp">GRADINATOR · РЕЕСТР ЗАНЯТИЙ</div>
                 </footer>
               </div>
             </div>
+            <CookieNotice />
           </ScheduleProvider>
         </AuthProvider>
       </body>

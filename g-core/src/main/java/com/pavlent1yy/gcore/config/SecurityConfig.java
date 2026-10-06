@@ -2,6 +2,8 @@ package com.pavlent1yy.gcore.config;
 
 
 import com.pavlent1yy.gcore.handler.OAuth2AuthenticationSuccessHandler;
+import com.pavlent1yy.gcore.service.oauth.ProviderOAuth2UserService;
+import com.pavlent1yy.gcore.service.oauth.VkIdTokenParametersConverter;
 import com.pavlent1yy.gcore.service.jwt.JwtAuthenticationFilter;
 import com.pavlent1yy.gcore.service.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.http.HttpStatus;
@@ -28,6 +31,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 public class SecurityConfig {
 
     private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
+    private final ProviderOAuth2UserService providerOAuth2UserService;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
@@ -63,6 +67,12 @@ public class SecurityConfig {
                         .authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
+                        .tokenEndpoint(token -> token
+                                .accessTokenResponseClient(authorizationCodeTokenResponseClient())
+                        )
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(providerOAuth2UserService)
+                        )
                         .successHandler(oauth2AuthenticationSuccessHandler)
                         .failureUrl(frontendUrl + "/login?error=oauth")
                 )
@@ -71,6 +81,12 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 )
                 .build();
+    }
+
+    private RestClientAuthorizationCodeTokenResponseClient authorizationCodeTokenResponseClient() {
+        RestClientAuthorizationCodeTokenResponseClient client = new RestClientAuthorizationCodeTokenResponseClient();
+        client.addParametersConverter(new VkIdTokenParametersConverter());
+        return client;
     }
 
     @Bean

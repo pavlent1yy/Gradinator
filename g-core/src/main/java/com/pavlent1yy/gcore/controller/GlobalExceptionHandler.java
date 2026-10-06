@@ -3,6 +3,7 @@ package com.pavlent1yy.gcore.controller;
 import com.pavlent1yy.gcore.customExceptions.ScheduleNotFoundException;
 import com.pavlent1yy.gcore.customExceptions.EmailDeliveryException;
 import com.pavlent1yy.gcore.customExceptions.GroupNotFoundException;
+import com.pavlent1yy.gcore.customExceptions.InvalidAbsenceException;
 import com.pavlent1yy.gcore.customExceptions.PasswordIsIncorrect;
 import com.pavlent1yy.gcore.customExceptions.InvalidVerificationTokenException;
 import org.springframework.http.HttpStatus;
@@ -30,7 +31,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
     }
 
-    @ExceptionHandler({PasswordIsIncorrect.class, GroupNotFoundException.class})
+    @ExceptionHandler({PasswordIsIncorrect.class, GroupNotFoundException.class, InvalidAbsenceException.class})
     public ResponseEntity<Map<String, String>> handleBadUserRequest(
             RuntimeException ex
     ) {
@@ -42,6 +43,6 @@ public class GlobalExceptionHandler {
             EmailDeliveryException ex
     ) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(Map.of("error", "Письмо не удалось отправить. Попробуйте позже"));
+                .body(Map.of("error", "Письмо не удалось отправить. Попробуй позже"));
     }
 }

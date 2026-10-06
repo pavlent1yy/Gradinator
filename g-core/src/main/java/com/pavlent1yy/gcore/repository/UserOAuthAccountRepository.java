@@ -15,4 +15,6 @@ public interface UserOAuthAccountRepository
     );
 
     boolean existsByProviderAndProviderUserId(OAuthProvider provider, String providerUserId);
+
+    void deleteAllByUser_Id(Long userId);
 }

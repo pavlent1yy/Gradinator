@@ -104,7 +104,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write("""
         {
-            "error": "Слишком много запросов, попробуйте позже",
+            "error": "Слишком много запросов, попробуй позже",
             "message": "Rate limit exceeded"
         }
         """);

@@ -35,12 +35,7 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
-        LoginResponse response = authService.login(request);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE,
-                        authService.createRefreshCookie(response.refreshToken()).toString()).body(
-                                new LoginResponse(response.accessToken(), null));
+        return withAuthCookies(authService.login(request));
     }
 
     @PostMapping("/logout")
@@ -92,17 +87,14 @@ public class AuthController {
     public ResponseEntity<LoginResponse> refresh(
             @CookieValue("gradinator_refresh") String refreshToken
     ) {
-        LoginResponse response = authService.refresh(refreshToken);
+        return withAuthCookies(authService.refresh(refreshToken));
+    }
 
+    private ResponseEntity<LoginResponse> withAuthCookies(LoginResponse response) {
         return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.SET_COOKIE,
-                        authService.createRefreshCookie(response.refreshToken()).toString()
-                )
-                .body(new LoginResponse(
-                        response.accessToken(),
-                        null
-                ));
+                .header(HttpHeaders.SET_COOKIE, authCookieService.accessCookie(response.accessToken()).toString())
+                .header(HttpHeaders.SET_COOKIE, authCookieService.refreshCookie(response.refreshToken()).toString())
+                .body(new LoginResponse(response.accessToken(), null));
     }
 
 

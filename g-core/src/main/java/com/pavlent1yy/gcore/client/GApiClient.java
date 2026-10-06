@@ -5,6 +5,7 @@ import com.pavlent1yy.gcore.dto.records.ScheduleResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
@@ -73,4 +74,47 @@ public class GApiClient {
                 .body(new ParameterizedTypeReference<>() {});
     }
 
+    public Map<String, ScheduleResponse> getAllSchedules(LocalDate date) {
+        try {
+            Map<String, ScheduleResponse> schedules = gApiRestClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/api/schedule")
+                            .queryParam("date", date)
+                            .build())
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<Map<String, ScheduleResponse>>() {});
+
+            return schedules == null ? Map.of() : schedules;
+        } catch (HttpClientErrorException.NotFound e) {
+            return Map.of();
+        }
+    }
+
+    public List<String> getTeachers() {
+        return getList("/api/teachers");
+    }
+
+    public List<String> getSubjects() {
+        return getList("/api/subjects");
+    }
+
+    public List<String> getRooms() {
+        return getList("/api/rooms");
+    }
+
+    public Map<String, String> getCurrentWeekType() {
+        return gApiRestClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/schedule/current-weektype").build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+    }
+
+    private List<String> getList(String path) {
+        List<String> values = gApiRestClient.get()
+                .uri(uriBuilder -> uriBuilder.path(path).build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        return values == null ? List.of() : values;
+    }
 }
