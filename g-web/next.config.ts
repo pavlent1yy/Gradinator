@@ -4,6 +4,8 @@ const G_CORE_URL = process.env.G_CORE_URL || 'http://localhost:9091';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
+  outputFileTracingRoot: process.cwd(),
 
   async rewrites() {
     return [
