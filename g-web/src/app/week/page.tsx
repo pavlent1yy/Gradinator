@@ -9,7 +9,7 @@ import * as api from '../../lib/api';
 import { addDaysIso, formatDateShort, formatDayName, toIsoDate, weekStartIso } from '../../lib/date';
 import { joinList, pickSlot } from '../../lib/schedule';
 import type { Absence, WeekDay } from '../../lib/api';
-import SubjectText from '../../components/SubjectText';
+import SubjectText, { isCancelled } from '../../components/SubjectText';
 
 const WORK_DAYS = 6;
 
@@ -113,13 +113,12 @@ export default function WeekPage() {
                   return (
                   <div
                     key={pair.pairNumber}
-                    className={`week-pair${pair.hasChanges ? ' pair--changed' : ''}${absence ? ` week-pair--${absence.type.toLowerCase()}` : ''}`}
+                    className={`week-pair${pair.hasChanges && !isCancelled(slot?.subjects) ? ' pair--changed' : ''}${absence ? ` week-pair--${absence.type.toLowerCase()}` : ''}`}
                   >
                     <span className="week-pair-num">{pair.pairNumber}</span>
                     <div>
                       <div className="week-pair-subject">
-                        <SubjectText subjects={slot?.subjects} />
-                        {pair.hasChanges && <span className="changed-stamp">замена</span>}
+                        <SubjectText subjects={slot?.subjects} hasChanges={pair.hasChanges} />
                         {absence && (
                           <span className={`absence-stamp absence-stamp--${absence.type.toLowerCase()}`}>
                             {absence.type === 'MISSED' ? 'пропуск' : 'опоздание'}

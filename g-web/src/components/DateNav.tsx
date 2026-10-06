@@ -10,9 +10,10 @@ type Props = {
   onNext: () => void;
   onPick: (iso: string) => void;
   onToday: () => void;
+  compact?: boolean;
 };
 
-export default function DateNav({ dateIso, onPrev, onNext, onPick, onToday }: Props) {
+export default function DateNav({ dateIso, onPrev, onNext, onPick, onToday, compact = false }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -50,7 +51,7 @@ export default function DateNav({ dateIso, onPrev, onNext, onPick, onToday }: Pr
       </button>
 
       <div className="date-current">
-        <div className="date-label mono" aria-live="polite">{formatDateShort(dateIso)}</div>
+        {!compact && <div className="date-label mono" aria-live="polite">{formatDateShort(dateIso)}</div>}
 
         <button
           type="button"

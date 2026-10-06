@@ -82,7 +82,10 @@ public class AbsenceService {
         List<AbsenceResponse> marked = pairs.stream()
                 .filter(pair -> pair.pairNumber() >= MIN_PAIR_NUMBER && pair.pairNumber() <= MAX_PAIR_NUMBER)
                 .sorted(Comparator.comparingInt(PairResponse::pairNumber))
-                .filter(pair -> ScheduleCells.activeCell(pair, schedule.weekType()) != null)
+                .filter(pair -> {
+                    var cell = ScheduleCells.activeCell(pair, schedule.weekType());
+                    return cell != null && !ScheduleCells.isCancelled(cell);
+                })
                 .map(pair -> upsert(
                         user,
                         date,

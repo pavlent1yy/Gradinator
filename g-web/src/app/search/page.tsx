@@ -133,8 +133,7 @@ export default function SearchPage() {
                   </button>
                   <div className="entry">
                     <h3 className="subject">
-                      <SubjectText subjects={hit.subjects} />
-                      {hit.hasChanges && <span className="changed-stamp">замена</span>}
+                      <SubjectText subjects={hit.subjects} hasChanges={hit.hasChanges} />
                     </h3>
                     <div className="meta-row-lesson">
                       <span className="room mono">{joinList(hit.rooms)}</span>

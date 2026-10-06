@@ -5,7 +5,7 @@ import { useScheduleContext } from './providers/ScheduleProvider';
 import { isDayOff, weekTypeLabel } from '../lib/date';
 import { joinList, pickSlot } from '../lib/schedule';
 import PageToolbar from '../components/PageToolbar';
-import SubjectText from '../components/SubjectText';
+import SubjectText, { isCancelled } from '../components/SubjectText';
 
 export default function Page() {
   const { schedule, loading, error, warning, date, nextDate } = useScheduleContext();
@@ -46,13 +46,12 @@ export default function Page() {
         )}
 
         {visiblePairs.map(({ pair, slot }) => (
-          <article key={pair.pairNumber} className={`pair${pair.hasChanges ? ' pair--changed' : ''}`}>
+          <article key={pair.pairNumber} className={`pair${pair.hasChanges && !isCancelled(slot?.subjects) ? ' pair--changed' : ''}${isCancelled(slot?.subjects) ? ' pair--cancelled' : ''}`}>
             <div className="pair-num">{pair.pairNumber ?? '—'}</div>
             <div className="pair-body">
               <div className="entry">
                 <h3 className="subject">
-                  <SubjectText subjects={slot?.subjects} />
-                  {pair.hasChanges && <span className="changed-stamp">замена</span>}
+                  <SubjectText subjects={slot?.subjects} hasChanges={pair.hasChanges} />
                 </h3>
                 <div className="meta-row-lesson">
                   <span className="room mono">{joinList(slot?.rooms)}</span>

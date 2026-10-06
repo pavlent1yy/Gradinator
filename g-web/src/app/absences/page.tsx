@@ -6,12 +6,12 @@ import { useAuthContext } from '../providers/AuthProvider';
 import { useScheduleContext } from '../providers/ScheduleProvider';
 import * as api from '../../lib/api';
 import type { Absence, AbsenceStats, AbsenceType } from '../../lib/api';
-import { formatDateLong, formatDateShort, isDayOff, toIsoDate } from '../../lib/date';
+import { formatDateLong, formatDateShort, formatDayName, isDayOff, toIsoDate } from '../../lib/date';
 import { joinList, pickSlot } from '../../lib/schedule';
 import type { Schedule } from '../../types/schedule';
-import PageToolbar from '../../components/PageToolbar';
+import DateNav from '../../components/DateNav';
 import ProfileCard from '../../components/ProfileCard';
-import { stripAlert } from '../../components/SubjectText';
+import SubjectText, { isCancelled, stripAlert } from '../../components/SubjectText';
 
 const FALLBACK_PAIRS = [0, 1, 2, 3, 4, 5, 6];
 
@@ -22,7 +22,13 @@ const PERIODS: { key: keyof AbsenceStats; label: string }[] = [
   { key: 'total', label: 'Всё время' }
 ];
 
-type Row = { pairNumber: number; subject: string | null };
+type Row = {
+  pairNumber: number;
+  subject: string | null;
+  subjects?: string[];
+  cancelled?: boolean;
+  hasChanges?: boolean;
+};
 
 function daysAgoIso(days: number) {
   const d = new Date();
@@ -33,7 +39,7 @@ function daysAgoIso(days: number) {
 export default function AbsencesPage() {
   const router = useRouter();
   const { user, initializing } = useAuthContext();
-  const { date, setDate } = useScheduleContext();
+  const { date, setDate, prevDate, nextDate, goToday } = useScheduleContext();
 
   const [loadedSchedule, setLoadedSchedule] = useState<{ key: string; data: Schedule | null } | null>(null);
   const [dayAbsences, setDayAbsences] = useState<Absence[]>([]);
@@ -100,7 +106,13 @@ export default function AbsencesPage() {
 
     schedule?.pairs?.forEach((pair) => {
       const slot = pickSlot(pair, schedule.weekType);
-      if (slot) byNumber.set(pair.pairNumber, { pairNumber: pair.pairNumber, subject: joinList(slot.subjects.map((t) => stripAlert(t).text), '') || null });
+      if (slot) byNumber.set(pair.pairNumber, {
+        pairNumber: pair.pairNumber,
+        subject: joinList(slot.subjects.map((t) => stripAlert(t).text), '') || null,
+        subjects: slot.subjects,
+        cancelled: isCancelled(slot.subjects),
+        hasChanges: !!pair.hasChanges
+      });
     });
 
     if (!schedule && scheduleMissing && !dayOff) {
@@ -197,106 +209,120 @@ export default function AbsencesPage() {
   return (
     <div className="page">
       <ProfileCard />
-      <PageToolbar showGroupPicker={false}>
-        <p className="absence-hint">Пропущенная пара — 2 часа, опоздание — 1 час.</p>
-      </PageToolbar>
-      <section className="absences" aria-labelledby="absences-title">
+      <h1 id="absences-title" className="auth-title absences-title">Мои пропуски</h1>
+      <div className="absences-layout">
+        <section className="absences" aria-labelledby="absences-title">
 
-
-        <h1 id="absences-title" className="auth-title">Мои пропуски</h1>
-
-        <div className="absence-stats">
-          {PERIODS.map(({ key, label }) => {
-            const period = stats?.[key];
-            return (
-              <div key={key} className="absence-stat">
-                <div className="absence-stat-label">{label}</div>
-                <div className="absence-stat-hours">{period ? period.hours : '—'}<span> ч</span></div>
-                <div className="absence-stat-meta mono">
-                  {period ? `${period.missedPairs} пар · ${period.lates} опозд.` : ''}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <h2 className="absence-subtitle">{formatDateLong(date)}</h2>
-
-        {message && <div className="status-card status-card--error" role="alert">{message}</div>}
-
-        {!group ? (
-          <div className="status-card">
-            Укажи группу в <a href="#profile">профиле выше</a> — тогда появятся пары.
+          <div className="day-bar">
+            <div className="day-bar-title">
+              <span className="day-bar-weekday">{formatDayName(date)}</span>
+              <span className="day-bar-date">{formatDateLong(date)}</span>
+            </div>
+            <DateNav compact dateIso={date} onPrev={prevDate} onNext={nextDate} onPick={setDate} onToday={goToday} />
           </div>
-        ) : isFuture ? (
-          <div className="status-card">Будущие даты отметить нельзя.</div>
-        ) : dayOff && dayAbsences.length === 0 ? (
-          <div className="status-card">Воскресенье, пар нет.</div>
-        ) : (
-          <>
-            {scheduleMissing && (
-              <div className="status-card status-card--warn">
-                Расписания на этот день нет, пары показаны по номерам.
-              </div>
-            )}
 
-            {rows.length === 0 && !scheduleMissing && (
-              <div className="status-card">Пар в этот день нет.</div>
-            )}
+          {message && <div className="status-card status-card--error" role="alert">{message}</div>}
 
-            <div className="schedule">
-              {rows.map((row) => {
-                const state = markByPair.get(row.pairNumber)?.type ?? null;
-                return (
-                  <article key={row.pairNumber} className={`pair absence-pair${state ? ` absence-pair--${state.toLowerCase()}` : ''}`}>
-                    <div className="pair-num">{row.pairNumber}</div>
-                    <div className="pair-body">
-                      <h3 className="subject">{row.subject ?? `Пара ${row.pairNumber}`}</h3>
-                      <div className="absence-toggle" role="group" aria-label={`Пара ${row.pairNumber}`}>
-                        <button type="button" aria-pressed={state === null} onClick={() => setPairState(row, null)}>Был</button>
-                        <button type="button" aria-pressed={state === 'LATE'} onClick={() => setPairState(row, 'LATE')}>Опоздал</button>
-                        <button type="button" aria-pressed={state === 'MISSED'} onClick={() => setPairState(row, 'MISSED')}>Пропустил</button>
+          {!group ? (
+            <div className="status-card">
+              Укажи группу в <a href="#profile">профиле выше</a> — тогда появятся пары.
+            </div>
+          ) : isFuture ? (
+            <div className="status-card">Будущие даты отметить нельзя.</div>
+          ) : dayOff && dayAbsences.length === 0 ? (
+            <div className="status-card">Воскресенье, пар нет.</div>
+          ) : (
+            <>
+              {scheduleMissing && (
+                <div className="status-card status-card--warn">
+                  Расписания на этот день нет, пары показаны по номерам.
+                </div>
+              )}
+
+              {rows.length === 0 && !scheduleMissing && (
+                <div className="status-card">Пар в этот день нет.</div>
+              )}
+
+              <div className="schedule">
+                {rows.map((row) => {
+                  const state = markByPair.get(row.pairNumber)?.type ?? null;
+                  return (
+                    <article key={row.pairNumber} className={`pair absence-pair${state ? ` absence-pair--${state.toLowerCase()}` : ''}${row.cancelled ? ' absence-pair--cancelled' : ''}${row.hasChanges && !row.cancelled && !state ? ' pair--changed' : ''}`}>
+                      <div className="pair-num">{row.pairNumber}</div>
+                      <div className="pair-body">
+                        <h3 className="subject">
+                          {row.subjects
+                            ? <SubjectText subjects={row.subjects} hasChanges={row.hasChanges} fallback={`Пара ${row.pairNumber}`} />
+                            : (row.subject ?? `Пара ${row.pairNumber}`)}
+                        </h3>
+                        {row.cancelled && !state ? (
+                          <p className="absence-cancelled-note"></p>
+                        ) : (
+                        <div className="absence-toggle" role="group" aria-label={`Пара ${row.pairNumber}`}>
+                          <button type="button" aria-pressed={state === null} onClick={() => setPairState(row, null)}>Был</button>
+                          <button type="button" aria-pressed={state === 'LATE'} onClick={() => setPairState(row, 'LATE')}>Опоздал</button>
+                          <button type="button" aria-pressed={state === 'MISSED'} onClick={() => setPairState(row, 'MISSED')}>Пропустил</button>
+                        </div>
+                        )}
                       </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+                    </article>
+                  );
+                })}
+              </div>
 
-            <div className="auth-actions">
-              {schedule && rows.length > 0 && (
-                <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(() => api.markAbsenceDay(date))}>
-                  Пропустил весь день
-                </button>
-              )}
-              {dayAbsences.length > 0 && (
-                <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => run(() => api.clearAbsenceDay(date))}>
-                  Очистить день
-                </button>
-              )}
-            </div>
-          </>
-        )}
+              <div className="auth-actions">
+                {schedule && rows.length > 0 && (
+                  <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(() => api.markAbsenceDay(date))}>
+                    Пропустил весь день
+                  </button>
+                )}
+                {dayAbsences.length > 0 && (
+                  <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => run(() => api.clearAbsenceDay(date))}>
+                    Очистить день
+                  </button>
+                )}
+              </div>
+            </>
+          )}
 
-        <h2 className="absence-subtitle">Последние отметки</h2>
-        {historyByDate.length === 0 ? (
-          <div className="status-card">Отметок пока нет.</div>
-        ) : (
-          <ul className="absence-history">
-            {historyByDate.map(([day, items]) => (
-              <li key={day}>
-                <button type="button" className="absence-history-item" onClick={() => setDate(day)}>
-                  <span className="mono">{formatDateShort(day)}</span>
-                  <span>
-                    {items.filter((a) => a.type === 'MISSED').length} пр. · {items.filter((a) => a.type === 'LATE').length} опозд.
-                  </span>
-                  <strong>{items.reduce((sum, a) => sum + a.hours, 0)} ч</strong>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+          <h2 className="absence-subtitle">Последние отметки</h2>
+          {historyByDate.length === 0 ? (
+            <div className="status-card">Отметок пока нет.</div>
+          ) : (
+            <ul className="absence-history">
+              {historyByDate.map(([day, items]) => (
+                <li key={day}>
+                  <button type="button" className="absence-history-item" onClick={() => setDate(day)}>
+                    <span className="mono">{formatDateShort(day)}</span>
+                    <span>
+                      {items.filter((a) => a.type === 'MISSED').length} пр. · {items.filter((a) => a.type === 'LATE').length} опозд.
+                    </span>
+                    <strong>{items.reduce((sum, a) => sum + a.hours, 0)} ч</strong>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <aside className="absences-aside" aria-label="Статистика">
+          <div className="absence-stats">
+            {PERIODS.map(({ key, label }) => {
+              const period = stats?.[key];
+              return (
+                <div key={key} className="absence-stat">
+                  <div className="absence-stat-label">{label}</div>
+                  <div className="absence-stat-hours">{period ? period.hours : '—'}<span> ч</span></div>
+                  <div className="absence-stat-meta mono">
+                    {period ? `${period.missedPairs} пар · ${period.lates} опозд.` : ''}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="absence-hint">Пропущенная пара — 2 часа, опоздание — 1 час.</p>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -125,10 +125,13 @@ export default function ProfileCard() {
                         Сменить пароль
                     </button>
                     <LogoutButton className="btn btn-ghost btn-sm">Выйти</LogoutButton>
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => setConfirmOpen(true)} disabled={deleting}>
-                        {deleting ? 'Удаление…' : 'Удалить аккаунт'}
-                    </button>
                 </div>
+            </div>
+
+            <div className="account-danger">
+                <button type="button" className="account-delete" onClick={() => setConfirmOpen(true)} disabled={deleting}>
+                    {deleting ? 'Удаление…' : 'Удалить аккаунт'}
+                </button>
             </div>
 
             {editingGroup && (

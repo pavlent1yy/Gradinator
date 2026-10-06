@@ -1619,3 +1619,107 @@ body{
   .account-actions{ width:100%; }
   .account-actions .btn{ flex:1 1 auto; width:auto; }
 }
+
+/* =========================================================================
+   Пропуски: компоновка
+   ========================================================================= */
+.absences-layout{
+  display:grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  gap:28px;
+  align-items:start;
+}
+.absences-layout > .absences{ margin-top:0; }
+.absences-aside{
+  position:sticky;
+  top:16px;
+  display:grid;
+  gap:10px;
+}
+.absences-aside .absence-subtitle{ margin:6px 0 2px; }
+.absences-aside .absence-stats{ grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+.absences-aside .absence-stat{ padding:9px 10px; }
+.absences-aside .absence-stat-label{ font-size:11px; }
+.absences-aside .absence-stat-hours{ font-size:26px; margin:2px 0; }
+.absences-aside .absence-stat-hours span{ font-size:13px; }
+.absences-aside .absence-stat-meta{ font-size:11px; }
+.absences-aside .absence-hint{ font-size:15px; margin:0; }
+
+.day-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px 18px;
+  flex-wrap:wrap;
+  margin:8px 0 14px;
+  padding:12px 16px;
+  background:var(--paper-white);
+  border:1.5px solid var(--ink-navy);
+  border-radius:6px;
+  box-shadow: 3px 4px 0 rgba(34,49,74,0.1);
+}
+.day-bar-title{ display:flex; flex-direction:column; line-height:1.1; }
+.day-bar-weekday{ font-family:var(--display); font-size:22px; text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-navy); }
+.day-bar-date{ font-family:var(--mono); font-size:13px; color:var(--ink-navy-soft); margin-top:3px; }
+.day-bar .date-btn{ width:40px; height:40px; font-size:22px; }
+.day-bar .date-calendar-btn{ width:38px; height:38px; }
+
+.account-danger{
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px dashed var(--line-hair);
+  display:flex;
+  justify-content:flex-start;
+}
+.account-delete{
+  font:inherit;
+  font-size:12.5px;
+  padding:2px 0;
+  border:none;
+  background:none;
+  color:var(--ink-red);
+  opacity:0.8;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  cursor:pointer;
+}
+.account-delete:hover{ opacity:1; }
+
+@media (max-width:880px){
+  .absences-layout{ grid-template-columns:1fr; gap:18px; }
+  .absences-aside{ position:static; order:-1; }
+  .absences-aside .absence-stats{ grid-template-columns:repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width:540px){
+  .absences-aside .absence-stats{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+
+/* Пропуски: выравнивание колонок, плашка даты, снятые пары */
+.absences-title{ margin-bottom:0; }
+.absences-layout .day-bar{ margin-top:0; }
+.day-bar{ justify-content:flex-start; gap:12px 22px; }
+.day-bar .date-current{ border-bottom:none; padding:0; }
+.cancelled-stamp{
+  display:inline-block;
+  font-family:var(--stamp);
+  font-size:12px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  color:var(--ink-navy-soft);
+  border:1.5px dashed var(--ink-navy-soft);
+  border-radius:3px;
+  padding:2px 8px;
+  transform:rotate(-2deg);
+}
+.absence-pair--cancelled{ opacity:0.75; background: repeating-linear-gradient(135deg, var(--paper-white) 0 10px, rgba(34,49,74,0.03) 10px 20px); }
+.absence-cancelled-note{ margin:0; font-family:var(--hand); font-size:16px; color:var(--ink-navy-soft); }
+.pair--cancelled{ opacity:0.75; background: repeating-linear-gradient(135deg, var(--paper-white) 0 10px, rgba(34,49,74,0.03) 10px 20px); }
+
+/* quickfix: место под пары и неподвижный переключатель дат */
+.page-main{ min-height:min(62vh, 640px); }
+.day-bar-title{ width:190px; flex:0 0 auto; }
+.day-bar-weekday{ white-space:nowrap; }
+.day-bar-date{ white-space:nowrap; }
+@media (max-width:540px){
+  .day-bar-title{ width:auto; flex:1 1 100%; }
+}

@@ -150,6 +150,17 @@ class AbsenceServiceTest {
     }
 
     @Test
+    void markDaySkipsCancelledPairs() {
+        when(scheduleService.getSchedule("ИС1-33", DAY)).thenReturn(new ScheduleResponse(
+                "ИС1-33", "Понедельник", WeekType.NUMERATOR, DAY, List.of(
+                        new PairResponse(1, cell("❕ Снято"), cell(), true),
+                        new PairResponse(2, cell("Физика"), cell(), false)
+                )));
+
+        assertThat(absenceService.markDay(EMAIL, DAY)).extracting(AbsenceResponse::pairNumber).containsExactly(2);
+    }
+
+    @Test
     void markDayFailsWithoutPairsOrGroup() {
         when(scheduleService.getSchedule("ИС1-33", DAY)).thenReturn(
                 new ScheduleResponse("ИС1-33", "Воскресенье", WeekType.NUMERATOR, DAY, List.of()));
