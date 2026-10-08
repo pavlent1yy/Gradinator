@@ -68,7 +68,7 @@ public class WebParserService {
                     var cells = row.select("td");
                     if (cells.size() < 6) continue;
 
-                    String group = cells.get(1).text().trim();
+                    String group = cells.get(1).text().trim().toUpperCase();
                     if (group.isBlank()) continue;
 
                     String pairNumber = cells.get(2).text().trim();
