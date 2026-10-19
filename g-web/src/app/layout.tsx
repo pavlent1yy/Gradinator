@@ -1,11 +1,15 @@
-import './globals.css';
+import '../styles/base.css';
+import '../styles/classic.css';
+import '../styles/modern.css';
 import { AuthProvider } from './providers/AuthProvider';
 import { ScheduleProvider } from './providers/ScheduleProvider';
 import Header from '../components/Header';
 import CookieNotice from '../components/CookieNotice';
 import Link from 'next/link';
 import PageFlip from '../components/PageFlip';
-import { Inter, Oswald, JetBrains_Mono, Caveat } from 'next/font/google';
+import Backdrop from '../components/Backdrop';
+import { Inter, Oswald, JetBrains_Mono, Caveat, Onest } from 'next/font/google';
+import { DEFAULT_THEME, themeInitScript } from '../lib/theme';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -31,6 +35,12 @@ const caveat = Caveat({
   display: 'swap',
 });
 
+const onest = Onest({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
 export const metadata = {
   title: 'GradInator — Расписание',
   description: 'Расписание ЯГК и учёт пропусков. Неофициальный студенческий проект.',
@@ -40,11 +50,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="ru"
-      className={`${inter.variable} ${oswald.variable} ${jetbrainsMono.variable} ${caveat.variable}`}
+      data-theme={DEFAULT_THEME}
+      suppressHydrationWarning
+      className={`${inter.variable} ${oswald.variable} ${jetbrainsMono.variable} ${caveat.variable} ${onest.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body>
         <AuthProvider>
           <ScheduleProvider>
+            <Backdrop />
             <div className="desk">
               <div className="app" id="app-root">
                 <span className="tape tape--left" aria-hidden="true" />

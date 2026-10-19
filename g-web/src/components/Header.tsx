@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useAuthContext } from '../app/providers/AuthProvider';
 import { useScheduleContext } from '../app/providers/ScheduleProvider';
 import { fetchCurrentWeekType } from '../lib/api';
+import ThemeSwitcher from './ThemeSwitcher';
 import { formatDateLong, formatDayName, weekTypeLabel } from '../lib/date';
 
 function initialsFromEmail(email: string) {
@@ -56,6 +57,7 @@ export default function Header() {
       </nav>
 
       <div className="mast-user">
+        <ThemeSwitcher />
         {!initializing && !user && (
           <>
             {navLink('/login', 'Вход')}
