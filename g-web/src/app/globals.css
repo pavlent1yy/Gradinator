@@ -1738,3 +1738,51 @@ body{
   border-bottom:1px dashed currentColor;
 }
 .forgot-link:hover{ border-bottom-style:solid; }
+
+/* Поиск в выпадающем списке групп */
+.combo-list{ display:flex; flex-direction:column; overflow:hidden; }
+.combo-options{ list-style:none; margin:0; padding:0; overflow:auto; min-height:0; flex:1 1 auto; outline:none; }
+.combo-options::-webkit-scrollbar{ width:8px; }
+.combo-options::-webkit-scrollbar-thumb{ background: rgba(34,49,74,0.16); border-radius:8px; }
+.combo-list--search{ min-width:240px; }
+.combo-search{
+  font:inherit; font-size:15px; font-weight:500;
+  width:100%; margin:0 0 6px; padding:9px 11px;
+  border:1.5px solid var(--line-hair); border-radius:5px;
+  background:var(--paper-cream); color:var(--ink-navy);
+  outline:none; flex:0 0 auto;
+}
+.combo-search:focus{ border-color:var(--ink-navy); }
+.combo-empty{ margin:8px 9px; font-family:var(--hand); font-size:15px; color:var(--ink-navy-soft); }
+
+/* Тип недели на «Неделе» */
+.week-nav-type{ font-size:11.5px; padding:5px 10px; }
+.week-nav-type.is-hidden{ visibility:hidden; }
+
+/* Телефоны */
+@media (max-width:540px){
+  .page-toolbar{ padding:10px; gap:14px 10px; }
+  .toolbar-group{ gap:14px 8px; }
+  .toolbar-group .combo{ flex:1 1 140px; }
+  .combo-toggle{ padding:10px 12px; }
+  .combo-list{
+    position:fixed; left:8px; right:8px; top:auto; bottom:8px; width:auto;
+    max-height:min(70vh, 480px); padding:10px;
+    transform-origin:bottom center; transform:translateY(16px);
+    box-shadow: 0 -8px 40px rgba(34,20,10,0.32);
+  }
+  .combo-list.open{ transform:translateY(0); }
+  .combo-search{ font-size:16px; padding:11px 12px; }
+  .combo-list li{ padding:11px 10px; font-size:15px; }
+  .combo-list li:hover, .combo-list li.focused{ transform:none; }
+  .week-nav{ width:100%; justify-content:space-between; gap:6px; }
+  .week-nav .date-label{ flex:1 1 auto; font-size:12.5px; }
+  .week-nav .btn-sm{ width:100%; order:6; }
+  .week-nav-type{ order:5; transform:none; }
+  .week-nav-type.is-hidden{ display:none; }
+  .week-day{ padding:12px 12px 14px; }
+  .week-pair{ grid-template-columns:24px 1fr; gap:8px; }
+  .week-pair-num{ font-size:19px; }
+  .week-pair-subject{ font-size:14.5px; }
+  .date-btn, .date-calendar-btn{ min-width:40px; min-height:40px; }
+}

@@ -52,7 +52,7 @@ export default function PageToolbar({ showGroupPicker = true, showDate = true, s
             includeAll
             allLabel="Все отделения"
           />
-          <Combo label="Выбрать группу" options={visibleGroups} value={group} onChange={setGroup} homeGroup={homeGroup} />
+          <Combo label="Выбрать группу" searchable options={visibleGroups} value={group} onChange={setGroup} homeGroup={homeGroup} />
           {!isOwnGroup && homeGroup && (
             <button type="button" className="own-group-pin" onClick={goToOwnGroup}>
               Моя группа: {homeGroup}

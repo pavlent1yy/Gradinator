@@ -6,7 +6,7 @@ import { useScheduleContext } from '../providers/ScheduleProvider';
 import { useAuthContext } from '../providers/AuthProvider';
 import PageToolbar from '../../components/PageToolbar';
 import * as api from '../../lib/api';
-import { addDaysIso, formatDateShort, formatDayName, toIsoDate, weekStartIso } from '../../lib/date';
+import { addDaysIso, formatDateShort, formatDayName, toIsoDate, weekStartIso, weekTypeLabel } from '../../lib/date';
 import { joinList, pickSlot } from '../../lib/schedule';
 import type { Absence, WeekDay } from '../../lib/api';
 import SubjectText, { isCancelled } from '../../components/SubjectText';
@@ -63,6 +63,7 @@ export default function WeekPage() {
   const current = loaded?.key === key ? loaded : null;
   const result = current?.days ?? null;
   const today = toIsoDate(new Date());
+  const weekType = result?.find((d) => d.schedule?.weekType)?.schedule?.weekType;
 
   return (
     <div className="page">
@@ -71,6 +72,9 @@ export default function WeekPage() {
           <button type="button" className="date-btn" aria-label="Предыдущая неделя" onClick={() => setDate(addDaysIso(weekStart, -7))}>‹</button>
           <span className="date-label">{formatDateShort(weekStart)} — {formatDateShort(weekEnd)}</span>
           <button type="button" className="date-btn" aria-label="Следующая неделя" onClick={() => setDate(addDaysIso(weekStart, 7))}>›</button>
+          <span className={`week-badge week-nav-type${weekType ? '' : ' is-hidden'}`} title="Тип недели" aria-live="polite">
+            {weekType ? weekTypeLabel(weekType) : '—'}
+          </span>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDate(today)}>Эта неделя</button>
         </div>
       </PageToolbar>
