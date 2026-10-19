@@ -2,12 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthContext } from '../app/providers/AuthProvider';
 import { useScheduleContext } from '../app/providers/ScheduleProvider';
 import { fetchCurrentWeekType } from '../lib/api';
 import ThemeSwitcher from './ThemeSwitcher';
 import { formatDateLong, formatDayName, weekTypeLabel } from '../lib/date';
+
+const SECTIONS = [
+  { href: '/', label: 'Расписание' },
+  { href: '/week', label: 'Неделя' },
+  { href: '/search', label: 'Поиск' },
+  { href: '/rooms', label: 'Аудитории' },
+  { href: '/absences', label: 'Пропуски' },
+];
 
 function initialsFromEmail(email: string) {
   const name = email.split('@')[0] || email;
@@ -20,10 +28,30 @@ export default function Header() {
   const { user, initializing } = useAuthContext();
   const { date, schedule } = useScheduleContext();
   const [currentWeekType, setCurrentWeekType] = useState<string | null>(null);
+  const [menuOpenAt, setMenuOpenAt] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const menuOpen = menuOpenAt === pathname;
+  const currentSection = SECTIONS.find((s) => s.href === pathname)?.label ?? 'Разделы';
 
   useEffect(() => {
     fetchCurrentWeekType().then(setCurrentWeekType);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointer = (e: PointerEvent) => {
+      if (!navRef.current?.contains(e.target as Node)) setMenuOpenAt(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpenAt(null);
+    };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   const weekLabel = weekTypeLabel(pathname === '/' ? (schedule?.weekType ?? currentWeekType) : currentWeekType);
 
@@ -48,13 +76,27 @@ export default function Header() {
         {weekLabel !== '—' && <div className="week-badge" title="Тип текущей недели">{weekLabel}</div>}
       </div>
 
-      <nav className="main-nav" aria-label="Основная навигация">
-        {navLink('/', 'Расписание')}
-        {navLink('/week', 'Неделя')}
-        {navLink('/search', 'Поиск')}
-        {navLink('/rooms', 'Аудитории')}
-        {navLink('/absences', 'Пропуски')}
-      </nav>
+      <div className={`nav-wrap${menuOpen ? ' is-open' : ''}`} ref={navRef}>
+        <button
+          type="button"
+          className="nav-burger"
+          aria-expanded={menuOpen}
+          aria-controls="main-nav"
+          onClick={() => setMenuOpenAt(menuOpen ? null : pathname)}
+        >
+          <span>{currentSection}</span>
+          <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m9 6 6 6-6 6" />
+          </svg>
+        </button>
+        <nav className="main-nav" id="main-nav" aria-label="Основная навигация">
+          {SECTIONS.map((s) => (
+            <Link key={s.href} href={s.href} className={`nav-link${pathname === s.href ? ' is-active' : ''}`} onClick={() => setMenuOpenAt(null)}>
+              {s.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
 
       <div className="mast-user">
         <ThemeSwitcher />

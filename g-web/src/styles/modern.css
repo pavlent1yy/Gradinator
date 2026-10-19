@@ -241,6 +241,8 @@
     white-space:nowrap;
   }
 
+  .nav-wrap{ display:contents; }
+  .nav-burger{ display:none; }
   .main-nav{
     display:flex;
     gap:2px;
@@ -1034,9 +1036,32 @@
   @media (max-width:540px){
     &{ --pair-num-w:48px; }
     .desk{ padding:8px 8px 20px; }
-    .masthead{ position:static; padding:10px; gap:8px; border-radius:var(--radius-m); }
-    .main-nav{ order:3; width:100%; overflow-x:auto; }
-    .nav-link{ flex:1 0 auto; text-align:center; padding:7px 10px; }
+    .masthead{ position:relative; top:0; padding:10px; gap:8px; border-radius:var(--radius-m); }
+    .nav-wrap{ display:block; position:relative; order:3; width:100%; z-index:40; }
+    .nav-burger{
+      display:flex; align-items:center; justify-content:space-between; gap:8px;
+      width:100%; padding:9px 14px;
+      font:inherit; font-size:14.5px; font-weight:600;
+      color:var(--text);
+      background:var(--bg-sunken);
+      border:none; border-radius:999px;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.12);
+      cursor:pointer;
+    }
+    .nav-burger .chev{ color:var(--accent-strong); transition:transform .2s var(--ease-out); }
+    .nav-wrap.is-open .nav-burger .chev{ transform:rotate(90deg); }
+    .nav-wrap .main-nav{
+      display:none;
+      position:absolute; left:0; right:0; top:calc(100% + 6px);
+      flex-direction:column; align-items:stretch; gap:2px;
+      padding:6px;
+      background:var(--bg-raised);
+      border:1px solid var(--line);
+      border-radius:var(--radius-m);
+      box-shadow:var(--hi), var(--shadow-lg);
+    }
+    .nav-wrap.is-open .main-nav{ display:flex; animation: modern-in .18s var(--ease-out); }
+    .nav-link{ padding:10px 14px; border-radius:var(--radius-s); }
     .mast-date .week-badge{ display:none; }
     .pair-num{ font-size:20px; }
     .subject{ font-size:15.5px; }
@@ -1044,7 +1069,13 @@
     .btn{ width:100%; }
     .page-toolbar{ padding:10px; gap:14px 10px; }
     .toolbar-group{ gap:14px 8px; }
-    .toolbar-group .combo{ flex:1 1 140px; }
+    .toolbar-group .combo{ flex:1 1 0; min-width:0; width:auto; }
+    .toolbar-group .combo--dept{ flex:0 1 38%; }
+    .toolbar-group .combo-toggle{ padding:9px 10px; font-size:14px; }
+    .toolbar-group .combo-toggle > span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .toolbar-group .combo--dept .combo-list{ width:max-content; min-width:100%; max-width:calc(100vw - 32px); }
+    .toolbar-group .combo:not(.combo--dept) .combo-list{ left:auto; right:0; }
+    .toolbar-group .own-group-pin{ flex:1 1 100%; }
     .date-nav{ gap:6px; }
     .today-flag span{ display:none; }
     .day-bar-title{ width:auto; flex:1 1 100%; }

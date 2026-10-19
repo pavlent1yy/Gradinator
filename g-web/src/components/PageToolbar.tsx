@@ -46,6 +46,7 @@ export default function PageToolbar({ showGroupPicker = true, showDate = true, s
           <Combo
             label="Отделение"
             tab="Отделение"
+            className="combo--dept"
             options={departments}
             value={department}
             onChange={setDepartment}

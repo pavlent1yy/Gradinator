@@ -15,6 +15,7 @@ type Props = {
   includeAll?: boolean;
   allLabel?: string;
   searchable?: boolean;
+  className?: string;
 };
 
 function normalize(s: string) {
@@ -30,7 +31,8 @@ export default function Combo({
   homeGroup,
   includeAll = false,
   allLabel = 'Все',
-  searchable = false
+  searchable = false,
+  className
 }: Props) {
   const uid = useId();
   const [open, setOpen] = useState(false);
@@ -124,7 +126,7 @@ export default function Combo({
   }, [isAllSelected, allLabel, value]);
 
   return (
-    <div id={`combo-${uid}`} className="combo combo--small" role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={`combo-list-${uid}`} aria-labelledby={`combo-label-${uid}`}>
+    <div id={`combo-${uid}`} className={`combo combo--small${className ? ` ${className}` : ''}`} role="combobox" aria-haspopup="listbox" aria-expanded={open} aria-controls={`combo-list-${uid}`} aria-labelledby={`combo-label-${uid}`}>
       <div className="combo-field" id={`combo-label-${uid}`}>
         <span className="combo-tab">{tab}</span>
         <button
