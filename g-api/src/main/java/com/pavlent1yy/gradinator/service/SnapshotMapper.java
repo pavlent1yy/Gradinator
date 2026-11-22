@@ -20,15 +20,17 @@ public class SnapshotMapper {
      * внутри группы — пары по номеру, склеиваем в строку и берём SHA-256.
      * Порядок важен — без сортировки одинаковые данные могут дать разный hash.
      */
-    public String computeHash(Map<String, DaySchedule> byGroup) {
+    public String computeHash(Map<String, DaySchedule> byGroup, Map<String, Set<Integer>> changedPairsByGroup) {
         StringBuilder sb = new StringBuilder();
 
         byGroup.keySet().stream().sorted().forEach(group -> {
             sb.append(group).append('|');
             DaySchedule day = byGroup.get(group);
+            Set<Integer> changedPairs = changedPairsByGroup.getOrDefault(group, Set.of());
             for (PairSlot pair : day.getPairs().stream()
                     .sorted(Comparator.comparingInt(PairSlot::getPairNumber)).toList()) {
                 sb.append(pair.getPairNumber()).append(':');
+                if (changedPairs.contains(pair.getPairNumber())) sb.append('!');
                 appendCell(sb, pair.getNumerator());
                 sb.append('/');
                 appendCell(sb, pair.getDenominator());
@@ -38,6 +40,17 @@ public class SnapshotMapper {
         });
 
         return sha256(sb.toString());
+    }
+
+    public PairSlot toPairSlot(ScheduleEntry entry) {
+        return new PairSlot(entry.getPairNumber(),
+                toCellData(entry.getNumeratorSubjects(), entry.getNumeratorTeachers(), entry.getNumeratorRooms()),
+                toCellData(entry.getDenominatorSubjects(), entry.getDenominatorTeachers(), entry.getDenominatorRooms()));
+    }
+
+    private CellData toCellData(List<String> subjects, List<String> teachers, List<String> rooms) {
+        if (subjects.isEmpty() && teachers.isEmpty() && rooms.isEmpty()) return null;
+        return new CellData(new ArrayList<>(subjects), new ArrayList<>(teachers), new ArrayList<>(rooms));
     }
 
     private void appendCell(StringBuilder sb, CellData cell) {

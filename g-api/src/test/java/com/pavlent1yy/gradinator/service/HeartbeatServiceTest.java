@@ -21,7 +21,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import static com.pavlent1yy.gradinator.service.parser.WebParserService.Shift.FIRST;
+import static com.pavlent1yy.gradinator.service.parser.WebParserService.Shift.SECOND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -62,11 +65,13 @@ class HeartbeatServiceTest {
                 Group.builder().name("СА1-21").build()));
         when(heartbeatLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(weekService.isDayOff(any())).thenReturn(false);
-        when(snapshotBuildService.buildAndSave(any(), anyList(), anyMap())).thenReturn(SnapshotBuiltStatus.CREATED);
+        when(snapshotBuildService.buildAndSave(any(), anyList(), anyMap(), anySet())).thenReturn(SnapshotBuiltStatus.CREATED);
     }
 
     private void changesFor(LocalDate date) {
-        when(parserService.getAllChanges()).thenReturn(new WebParserService.AllChanges(date, changes));
+        when(parserService.getAllChanges()).thenReturn(date == null ? List.of() : List.of(
+                new WebParserService.ShiftChanges(FIRST, date, Map.of()),
+                new WebParserService.ShiftChanges(SECOND, date, changes)));
     }
 
     private HeartbeatLog savedLog() {
@@ -81,7 +86,7 @@ class HeartbeatServiceTest {
 
         service.run();
 
-        verify(snapshotBuildService).buildAndSave(today, groups, changes);
+        verify(snapshotBuildService).buildAndSave(today, groups, changes, Set.of());
         HeartbeatLog log = savedLog();
         assertThat(log.getStatus()).isEqualTo(HeartbeatLog.Status.SUCCESS);
         assertThat(log.getMessage()).contains("Status: CREATED").contains("Groups: 2");
@@ -95,7 +100,7 @@ class HeartbeatServiceTest {
 
         service.run();
 
-        verify(snapshotBuildService, never()).buildAndSave(any(), anyList(), anyMap());
+        verify(snapshotBuildService, never()).buildAndSave(any(), anyList(), anyMap(), anySet());
         assertThat(savedLog().getMessage()).contains("Status: NO_CHANGES");
     }
 
@@ -106,7 +111,7 @@ class HeartbeatServiceTest {
 
         service.run();
 
-        verify(snapshotBuildService).buildAndSave(today, groups, Map.of());
+        verify(snapshotBuildService).buildAndSave(today, groups, Map.of(), Set.copyOf(groups));
     }
 
     @Test
@@ -115,7 +120,7 @@ class HeartbeatServiceTest {
 
         service.run();
 
-        verify(snapshotBuildService).buildAndSave(today, groups, Map.of());
+        verify(snapshotBuildService).buildAndSave(today, groups, Map.of(), Set.copyOf(groups));
         assertThat(savedLog().getMessage()).doesNotContain("Ahead");
     }
 
@@ -126,7 +131,7 @@ class HeartbeatServiceTest {
 
         service.run();
 
-        verify(snapshotBuildService, never()).buildAndSave(eq(today), anyList(), anyMap());
+        verify(snapshotBuildService, never()).buildAndSave(eq(today), anyList(), anyMap(), anySet());
         assertThat(savedLog().getMessage()).contains("Status: NO_CHANGES");
     }
 
@@ -135,11 +140,11 @@ class HeartbeatServiceTest {
         LocalDate tomorrow = today.plusDays(1);
         changesFor(tomorrow);
         when(snapshotBuildService.existsForDate(today)).thenReturn(true);
-        when(snapshotBuildService.buildAndSave(eq(tomorrow), anyList(), anyMap())).thenReturn(SnapshotBuiltStatus.UPDATED);
+        when(snapshotBuildService.buildAndSave(eq(tomorrow), anyList(), anyMap(), anySet())).thenReturn(SnapshotBuiltStatus.UPDATED);
 
         service.run();
 
-        verify(snapshotBuildService).buildAndSave(tomorrow, groups, changes);
+        verify(snapshotBuildService).buildAndSave(tomorrow, groups, changes, Set.of());
         assertThat(savedLog().getMessage()).contains("Ahead: " + tomorrow + " UPDATED");
     }
 
@@ -152,7 +157,32 @@ class HeartbeatServiceTest {
 
         service.run();
 
-        verify(snapshotBuildService, never()).buildAndSave(eq(tomorrow), anyList(), anyMap());
+        verify(snapshotBuildService, never()).buildAndSave(eq(tomorrow), anyList(), anyMap(), anySet());
+    }
+
+    @Test
+    void publishesEachShiftOnItsOwnDateAndPreservesOtherChanges() {
+        LocalDate tomorrow = today.plusDays(1);
+        var firstShiftChanges = Map.of("СА1-21", List.of(new PairSlot()));
+        when(parserService.getAllChanges()).thenReturn(List.of(
+                new WebParserService.ShiftChanges(FIRST, tomorrow, firstShiftChanges),
+                new WebParserService.ShiftChanges(SECOND, today, changes)));
+
+        service.run();
+
+        verify(snapshotBuildService).buildAndSave(today, groups, changes, Set.of("СА1-21"));
+        verify(snapshotBuildService).buildAndSave(tomorrow, groups, firstShiftChanges, Set.of("ИС1-33"));
+    }
+
+    @Test
+    void updatesAvailableShiftAndLogsErrorWhenOtherShiftIsUnavailable() {
+        when(parserService.getAllChanges()).thenReturn(List.of(
+                new WebParserService.ShiftChanges(SECOND, today, changes)));
+
+        service.run();
+
+        verify(snapshotBuildService).buildAndSave(today, groups, changes, Set.of("СА1-21"));
+        assertThat(savedLog().getStatus()).isEqualTo(HeartbeatLog.Status.ERROR);
     }
 
     @Test

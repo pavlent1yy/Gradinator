@@ -7,7 +7,6 @@ import com.pavlent1yy.gradinator.repository.ScheduleEntryRepository;
 import com.pavlent1yy.gradinator.repository.ScheduleSnapshotRepository;
 import com.pavlent1yy.gradinator.enums.SnapshotBuiltStatus;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +15,6 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @AllArgsConstructor
 public class SnapshotBuildService {
@@ -31,14 +29,28 @@ public class SnapshotBuildService {
     public SnapshotBuiltStatus buildAndSave(
             LocalDate date,
             List<String> groups,
-            Map<String, List<PairSlot>> changesByGroup
+            Map<String, List<PairSlot>> changesByGroup,
+            Set<String> preserveChangesFor
     ) {
+        if (groups.isEmpty()) throw new IllegalStateException("Нет групп для построения расписания на " + date);
+
+        Optional<ScheduleSnapshot> existing = snapshotRepository.findByScheduleDate(date);
+        Map<String, List<PairSlot>> effectiveChanges = new HashMap<>(changesByGroup);
+        if (existing.isPresent() && !preserveChangesFor.isEmpty()) {
+            for (var entry : entryRepository.findBySnapshot_Id(existing.get().getId())) {
+                if (entry.isHasChanges() && preserveChangesFor.contains(entry.getGroupName())) {
+                    effectiveChanges.computeIfAbsent(entry.getGroupName(), group -> new ArrayList<>())
+                            .add(snapshotMapper.toPairSlot(entry));
+                }
+            }
+        }
+
         Map<String, DaySchedule> byGroup = new HashMap<>();
         Map<String, Set<Integer>> changedPairsByGroup = new HashMap<>();
 
         for (String g : groups) {
             try {
-                List<PairSlot> changes = changesByGroup.getOrDefault(g, List.of());
+                List<PairSlot> changes = effectiveChanges.getOrDefault(g, List.of());
 
                 changedPairsByGroup.put(
                         g,
@@ -52,18 +64,12 @@ public class SnapshotBuildService {
                         scheduleService.getScheduleForDate(g, date, changes)
                 );
 
-            } catch (Exception e) {
-                log.error(
-                        "⭕Не удалось построить расписание для группы {}, пропускаю",
-                        g,
-                        e
-                );
+            } catch (RuntimeException e) {
+                throw new IllegalStateException("Не удалось построить расписание для группы " + g + " на " + date, e);
             }
         }
 
-        String newHash = snapshotMapper.computeHash(byGroup);
-        Optional<ScheduleSnapshot> existing =
-                snapshotRepository.findByScheduleDate(date);
+        String newHash = snapshotMapper.computeHash(byGroup, changedPairsByGroup);
 
         if (existing.isPresent() && existing.get().getHash().equals(newHash)) {
             return SnapshotBuiltStatus.NO_CHANGES;

@@ -1,5 +1,6 @@
 package com.pavlent1yy.gradinator.service;
 
+import com.pavlent1yy.gradinator.model.CellData;
 import com.pavlent1yy.gradinator.config.StorageContext;
 import com.pavlent1yy.gradinator.model.DaySchedule;
 import com.pavlent1yy.gradinator.model.GroupSchedule;
@@ -95,9 +96,9 @@ public class ScheduleService {
 
         for (PairSlot change : changesForGroup) {
             PairSlot original = merged.get(change.getPairNumber());
-            if (isAccordingToSchedule(change) && original != null) {
-                change.getNumerator().setSubjects(new ArrayList<>(original.getNumerator().getSubjects()));
-                change.getNumerator().setTeachers(new ArrayList<>(original.getNumerator().getTeachers()));
+            if (original != null) {
+                applyAccordingToSchedule(change.getNumerator(), original.getNumerator());
+                applyAccordingToSchedule(change.getDenominator(), original.getDenominator());
             }
             merged.put(change.getPairNumber(), change);
         }
@@ -164,10 +165,12 @@ public class ScheduleService {
             log.warn("🟠 Найдены группы, не записанные в базу: {}", diff );
     }
 
-    private boolean isAccordingToSchedule(PairSlot pair) {
-        return pair != null && pair.getNumerator() != null &&
-                pair.getNumerator().getSubjects().stream()
-                        .anyMatch(s -> s.toLowerCase().contains("по расписанию"));
+    private void applyAccordingToSchedule(CellData change, CellData original) {
+        if (change != null && original != null && change.getSubjects().stream()
+                .anyMatch(s -> s.toLowerCase(Locale.ROOT).contains("по расписанию"))) {
+            change.setSubjects(new ArrayList<>(original.getSubjects()));
+            change.setTeachers(new ArrayList<>(original.getTeachers()));
+        }
     }
 
     private int getScheduleDayIndex(LocalDate date) {

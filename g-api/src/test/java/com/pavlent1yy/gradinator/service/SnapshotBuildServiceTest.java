@@ -23,8 +23,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -75,7 +77,7 @@ class SnapshotBuildServiceTest {
     }
 
     private String hashOf(Map<String, DaySchedule> byGroup) {
-        return new SnapshotMapper().computeHash(byGroup);
+        return new SnapshotMapper().computeHash(byGroup, Map.of());
     }
 
     @SuppressWarnings("unchecked")
@@ -90,7 +92,7 @@ class SnapshotBuildServiceTest {
         when(scheduleService.getScheduleForDate(eq("ИС1-33"), eq(DATE), anyList())).thenReturn(day("Математика"));
         when(snapshotRepository.findByScheduleDate(DATE)).thenReturn(Optional.empty());
 
-        SnapshotBuiltStatus status = service.buildAndSave(DATE, List.of("ИС1-33"), Map.of());
+        SnapshotBuiltStatus status = service.buildAndSave(DATE, List.of("ИС1-33"), Map.of(), Set.of());
 
         assertThat(status).isEqualTo(SnapshotBuiltStatus.CREATED);
         verify(entryRepository, never()).deleteBySnapshot_Id(any());
@@ -110,7 +112,7 @@ class SnapshotBuildServiceTest {
                 .hash(hashOf(Map.of("ИС1-33", day("Математика")))).build();
         when(snapshotRepository.findByScheduleDate(DATE)).thenReturn(Optional.of(existing));
 
-        SnapshotBuiltStatus status = service.buildAndSave(DATE, List.of("ИС1-33"), Map.of());
+        SnapshotBuiltStatus status = service.buildAndSave(DATE, List.of("ИС1-33"), Map.of(), Set.of());
 
         assertThat(status).isEqualTo(SnapshotBuiltStatus.NO_CHANGES);
         verify(snapshotRepository, never()).save(any());
@@ -123,7 +125,7 @@ class SnapshotBuildServiceTest {
         ScheduleSnapshot existing = ScheduleSnapshot.builder().id(1L).scheduleDate(DATE).hash("old").build();
         when(snapshotRepository.findByScheduleDate(DATE)).thenReturn(Optional.of(existing));
 
-        SnapshotBuiltStatus status = service.buildAndSave(DATE, List.of("ИС1-33"), Map.of());
+        SnapshotBuiltStatus status = service.buildAndSave(DATE, List.of("ИС1-33"), Map.of(), Set.of());
 
         assertThat(status).isEqualTo(SnapshotBuiltStatus.UPDATED);
         assertThat(existing.getHash()).isNotEqualTo("old");
@@ -140,23 +142,47 @@ class SnapshotBuildServiceTest {
         when(scheduleService.getScheduleForDate("ИС1-33", DATE, List.of(change))).thenReturn(merged);
         when(snapshotRepository.findByScheduleDate(DATE)).thenReturn(Optional.empty());
 
-        service.buildAndSave(DATE, List.of("ИС1-33"), Map.of("ИС1-33", List.of(change)));
+        service.buildAndSave(DATE, List.of("ИС1-33"), Map.of("ИС1-33", List.of(change)), Set.of());
 
         assertThat(savedEntries()).singleElement()
                 .satisfies(e -> assertThat(e.isHasChanges()).isTrue());
     }
 
     @Test
-    void groupThatFailsToBuildIsSkipped() {
+    void groupThatFailsToBuildLeavesExistingSnapshotUntouched() {
         when(scheduleService.getScheduleForDate(eq("ИС1-33"), eq(DATE), anyList())).thenReturn(day("Математика"));
         when(scheduleService.getScheduleForDate(eq("СА1-21"), eq(DATE), anyList()))
                 .thenThrow(new RuntimeException("битый файл"));
-        when(snapshotRepository.findByScheduleDate(DATE)).thenReturn(Optional.empty());
+        ScheduleSnapshot existing = ScheduleSnapshot.builder().id(1L).scheduleDate(DATE).hash("old").build();
+        when(snapshotRepository.findByScheduleDate(DATE)).thenReturn(Optional.of(existing));
 
-        SnapshotBuiltStatus status = service.buildAndSave(DATE, List.of("ИС1-33", "СА1-21"), Map.of());
+        assertThatThrownBy(() -> service.buildAndSave(DATE, List.of("ИС1-33", "СА1-21"), Map.of(), Set.of()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("СА1-21");
+        assertThat(existing.getHash()).isEqualTo("old");
+        verify(snapshotRepository, never()).save(any());
+        verifyNoInteractions(entryRepository);
+    }
 
-        assertThat(status).isEqualTo(SnapshotBuiltStatus.CREATED);
-        assertThat(savedEntries()).extracting(ScheduleEntry::getGroupName).containsOnly("ИС1-33");
+    @Test
+    void keepsPublishedChangesForGroupsWithoutFreshPublication() {
+        ScheduleSnapshot existing = ScheduleSnapshot.builder().id(1L).scheduleDate(DATE).hash("old").build();
+        PairSlot change = new PairSlot(1, new CellData("❗ Химия", "404", "в предмете"), null);
+        DaySchedule changedDay = new DaySchedule("Понедельник");
+        changedDay.addPair(change);
+        when(snapshotRepository.findByScheduleDate(DATE)).thenReturn(Optional.of(existing));
+        when(entryRepository.findBySnapshot_Id(1L)).thenReturn(new SnapshotMapper().toEntries(
+                existing, Map.of("ИС1-33", changedDay), Map.of("ИС1-33", Set.of(1))));
+        when(scheduleService.getScheduleForDate("ИС1-33", DATE, List.of(change))).thenReturn(changedDay);
+        when(scheduleService.getScheduleForDate("СА1-21", DATE, List.of())).thenReturn(day("Математика"));
+
+        service.buildAndSave(DATE, List.of("ИС1-33", "СА1-21"), Map.of(), Set.of("ИС1-33"));
+
+        assertThat(savedEntries()).filteredOn(e -> e.getGroupName().equals("ИС1-33"))
+                .singleElement().satisfies(e -> {
+                    assertThat(e.isHasChanges()).isTrue();
+                    assertThat(e.getNumeratorSubjects()).containsExactly("❗ Химия");
+                });
     }
 
     @Test

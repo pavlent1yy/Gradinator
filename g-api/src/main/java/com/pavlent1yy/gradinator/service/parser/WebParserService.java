@@ -4,7 +4,6 @@ import com.pavlent1yy.gradinator.enums.WeekType;
 import com.pavlent1yy.gradinator.model.CellData;
 import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.service.WeekService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -33,63 +32,62 @@ public class WebParserService {
     @Value("${api.second-shift-url}")
     private String secondShiftUrl;
 
-    private static final String[] URLs = new String[2];
+    public enum Shift {
+        FIRST("12"), SECOND("34");
 
-    @PostConstruct
-    private void uploadTimetableURLs(){
-        URLs[0] = firstShiftUrl;
-        URLs[1] = secondShiftUrl;
-        log.debug("🐜Подгружены замены: \n{}\n{}", firstShiftUrl, secondShiftUrl);
-    }
+        private final Pattern groupPattern;
 
-    public record AllChanges(LocalDate date, Map<String, List<PairSlot>> byGroup) {
+        Shift(String courses) {
+            groupPattern = Pattern.compile(".+[-–—]\\s*[" + courses + "]\\d+$");
+        }
 
-        public List<PairSlot> forGroup(String group) {
-            return byGroup.getOrDefault(group, List.of());
+        public boolean includes(String group) {
+            return groupPattern.matcher(group.trim()).matches();
         }
     }
 
-    public AllChanges getAllChanges() {
+    public record ShiftChanges(Shift shift, LocalDate date, Map<String, List<PairSlot>> byGroup) {}
+
+    public List<ShiftChanges> getAllChanges() {
         log.info("🔵Загрузка замен...");
-        WeekType weekType = weekService.getCurrentWeekType();
-        LocalDate date = null;
-        Map<String, List<PairSlot>> byGroup = new HashMap<>();
+        List<ShiftChanges> changes = new ArrayList<>();
+        loadShift(Shift.FIRST, firstShiftUrl).ifPresent(changes::add);
+        loadShift(Shift.SECOND, secondShiftUrl).ifPresent(changes::add);
+        return changes;
+    }
 
-        for (String url : URLs) {
-            try {
-                Document document = Jsoup.connect(url).get();
-                LocalDate parsedDate = getDate(document);
-                if (date == null) date = parsedDate;
+    private Optional<ShiftChanges> loadShift(Shift shift, String url) {
+        try {
+            Document document = Jsoup.connect(url).get();
+            LocalDate date = getDate(document);
+            WeekType weekType = weekService.getWeekTypeByDate(date);
+            Map<String, List<PairSlot>> byGroup = new HashMap<>();
+            var table = document.body().select("div").select("table").get(0);
 
-                var table = document.body().select("div").select("table").get(0);
-                var rows = table.select("tbody").select("tr");
+            for (var row : table.select("tbody").select("tr")) {
+                var cells = row.select("td");
+                if (cells.size() < 6) continue;
 
-                for (var row : rows) {
-                    var cells = row.select("td");
-                    if (cells.size() < 6) continue;
+                String group = cells.get(1).text().trim().toUpperCase(Locale.ROOT);
+                if (group.isBlank() || (shift == Shift.FIRST ? Shift.SECOND : Shift.FIRST).includes(group)) continue;
 
-                    String group = cells.get(1).text().trim().toUpperCase();
-                    if (group.isBlank()) continue;
-
-                    String pairNumber = cells.get(2).text().trim();
-                    if (!pairNumber.matches("^[\\d,\\-\\s]+$")) {
-                        log.debug("🐜Пропускаю строку — не похоже на номер пары: '{}'", pairNumber);
-                        continue;
-                    }
-
-                    String subject = cells.get(4).text().trim();
-                    String room = cells.get(5).text().trim();
-
-                    List<PairSlot> pairs = expandPairNumbers(pairNumber, subject, room, weekType);
-                    byGroup.computeIfAbsent(group, k -> new ArrayList<>()).addAll(pairs);
+                String pairNumber = cells.get(2).text().trim();
+                if (!pairNumber.matches("^[\\d,\\-\\s]+$")) {
+                    log.debug("🐜Пропускаю строку — не похоже на номер пары: '{}'", pairNumber);
+                    continue;
                 }
-            } catch (Exception e) {
-                log.error("⭕Не удалось разобрать замены с {}", url, e);
+
+                String subject = cells.get(4).text().trim();
+                String room = cells.get(5).text().trim();
+
+                List<PairSlot> pairs = expandPairNumbers(pairNumber, subject, room, weekType);
+                byGroup.computeIfAbsent(group, k -> new ArrayList<>()).addAll(pairs);
             }
+            return Optional.of(new ShiftChanges(shift, date, byGroup));
+        } catch (Exception e) {
+            log.error("⭕Не удалось разобрать замены с {}", url, e);
+            return Optional.empty();
         }
-
-
-        return new AllChanges(date, byGroup);
     }
 
     private List<PairSlot> expandPairNumbers(String pairNumber, String subject, String room, WeekType weekType) {

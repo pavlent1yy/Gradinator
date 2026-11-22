@@ -27,7 +27,7 @@ class SnapshotMapperTest {
 
     @Test
     void hashIsSha256Hex() {
-        String hash = mapper.computeHash(Map.of("ИС1-33", day(pair(1, "Математика"))));
+        String hash = mapper.computeHash(Map.of("ИС1-33", day(pair(1, "Математика"))), Map.of());
 
         assertThat(hash).hasSize(64).matches("[0-9a-f]+");
     }
@@ -42,13 +42,13 @@ class SnapshotMapperTest {
         second.put("СА1-21", day(pair(1, "История")));
         second.put("ИС1-33", day(pair(2, "Физика"), pair(1, "Математика")));
 
-        assertThat(mapper.computeHash(first)).isEqualTo(mapper.computeHash(second));
+        assertThat(mapper.computeHash(first, Map.of())).isEqualTo(mapper.computeHash(second, Map.of()));
     }
 
     @Test
     void hashChangesWhenContentChanges() {
-        String before = mapper.computeHash(Map.of("ИС1-33", day(pair(1, "Математика"))));
-        String after = mapper.computeHash(Map.of("ИС1-33", day(pair(1, "Физика"))));
+        String before = mapper.computeHash(Map.of("ИС1-33", day(pair(1, "Математика"))), Map.of());
+        String after = mapper.computeHash(Map.of("ИС1-33", day(pair(1, "Физика"))), Map.of());
 
         assertThat(before).isNotEqualTo(after);
     }
@@ -58,15 +58,15 @@ class SnapshotMapperTest {
         PairSlot withDenominator = pair(1, "Математика");
         withDenominator.setDenominator(new CellData("Физика", "202", "Петров"));
 
-        String plain = mapper.computeHash(Map.of("ИС1-33", day(pair(1, "Математика"))));
-        String withDen = mapper.computeHash(Map.of("ИС1-33", day(withDenominator)));
+        String plain = mapper.computeHash(Map.of("ИС1-33", day(pair(1, "Математика"))), Map.of());
+        String withDen = mapper.computeHash(Map.of("ИС1-33", day(withDenominator)), Map.of());
 
         assertThat(plain).isNotEqualTo(withDen);
     }
 
     @Test
     void hashOfEmptyMapIsStable() {
-        assertThat(mapper.computeHash(Map.of())).isEqualTo(mapper.computeHash(new HashMap<>()));
+        assertThat(mapper.computeHash(Map.of(), Map.of())).isEqualTo(mapper.computeHash(new HashMap<>(), Map.of()));
     }
 
     @Test

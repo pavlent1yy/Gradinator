@@ -8,6 +8,7 @@ import com.pavlent1yy.gradinator.model.PairSlot;
 import com.pavlent1yy.gradinator.repository.HeartbeatLogRepository;
 import com.pavlent1yy.gradinator.service.parser.ExcelFileSyncService;
 import com.pavlent1yy.gradinator.service.parser.WebParserService;
+import com.pavlent1yy.gradinator.service.parser.WebParserService.ShiftChanges;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -53,45 +54,63 @@ public class HeartbeatService {
 
             var allChanges = parserService.getAllChanges();
             LocalDate today = LocalDate.now();
-            LocalDate changesDate = allChanges.date();
-
             List<String> groups = groupSyncService.syncAndGetGroups().stream()
                     .map(Group::getName)
                     .toList();
 
-            boolean changesCoverToday = changesDate != null && changesDate.equals(today);
-            Map<String, List<PairSlot>> todaysChanges = changesCoverToday
-                    ? allChanges.byGroup()
-                    : Map.of();
-
-            SnapshotBuiltStatus todayStatus;
-            if (weekService.isDayOff(today)) {
-                todayStatus = SnapshotBuiltStatus.NO_CHANGES;
-                log.debug("🐜 {} выходной, снапшот не строим", today);
-            } else if (!changesCoverToday && snapshotBuildService.existsForDate(today)) {
-                todayStatus = SnapshotBuiltStatus.NO_CHANGES;
-                log.debug("🐜 Снапшот на {} уже есть, замены. Пропускаю пересчёт", today);
-            } else {
-                todayStatus = snapshotBuildService.buildAndSave(today, groups, todaysChanges);
+            Map<LocalDate, List<ShiftChanges>> changesByDate = new TreeMap<>();
+            changesByDate.put(today, new ArrayList<>());
+            for (ShiftChanges changes : allChanges) {
+                if (!changes.date().isBefore(today)) {
+                    changesByDate.computeIfAbsent(changes.date(), date -> new ArrayList<>()).add(changes);
+                }
             }
 
+            SnapshotBuiltStatus todayStatus = buildSnapshot(today, groups, changesByDate.remove(today));
             message.append("""
                 Status: %s
                 Groups: %d
                 Snapshot: %s
                 """.formatted(todayStatus, groups.size(), today));
 
-            if (changesDate != null && changesDate.isAfter(today) && !weekService.isDayOff(changesDate)) {
-                var aheadStatus = snapshotBuildService.buildAndSave(changesDate, groups, allChanges.byGroup());
-                message.append("\nAhead: ").append(changesDate).append(" ").append(aheadStatus);
+            for (var entry : changesByDate.entrySet()) {
+                LocalDate date = entry.getKey();
+                if (weekService.isDayOff(date)) continue;
+                var aheadStatus = buildSnapshot(date, groups, entry.getValue());
+                message.append("\nAhead: ").append(date).append(" ").append(aheadStatus);
             }
 
-            saveLog(start, HeartbeatLog.Status.SUCCESS, message.toString());
+            boolean complete = allChanges.size() == WebParserService.Shift.values().length;
+            if (!complete) message.append("\nНе удалось загрузить замены для всех смен");
+            saveLog(start, complete ? HeartbeatLog.Status.SUCCESS : HeartbeatLog.Status.ERROR, message.toString());
 
         } catch (Exception e) {
             log.error("⭕Heartbeat упал", e);
             saveLog(start, HeartbeatLog.Status.ERROR, e.getMessage());
         }
+    }
+
+    private SnapshotBuiltStatus buildSnapshot(LocalDate date, List<String> groups, List<ShiftChanges> published) {
+        if (weekService.isDayOff(date) || (published.isEmpty() && snapshotBuildService.existsForDate(date))) {
+            return SnapshotBuiltStatus.NO_CHANGES;
+        }
+
+        Map<String, List<PairSlot>> changesByGroup = new HashMap<>();
+        for (ShiftChanges changes : published) {
+            changes.byGroup().forEach((group, pairs) ->
+                    changesByGroup.computeIfAbsent(group, key -> new ArrayList<>()).addAll(pairs));
+        }
+
+        Set<String> preserveChangesFor = new HashSet<>();
+        if (published.size() < WebParserService.Shift.values().length) {
+            for (String group : groups) {
+                if (!changesByGroup.containsKey(group) &&
+                        published.stream().noneMatch(changes -> changes.shift().includes(group))) {
+                    preserveChangesFor.add(group);
+                }
+            }
+        }
+        return snapshotBuildService.buildAndSave(date, groups, changesByGroup, preserveChangesFor);
     }
 
     private void saveLog(Instant start, HeartbeatLog.Status status, String message) {
