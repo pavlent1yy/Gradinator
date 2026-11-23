@@ -1,7 +1,7 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
-import { THEMES, Theme, applyTheme, readTheme } from '../lib/theme';
+import { useEffect, useSyncExternalStore } from 'react';
+import { THEMES, Theme, applyTheme, readTheme, restoreTheme } from '../lib/theme';
 
 function subscribe(onChange: () => void) {
   const observer = new MutationObserver(onChange);
@@ -31,6 +31,7 @@ const ICONS: Record<Theme, React.ReactNode> = {
 
 export default function ThemeSwitcher() {
   const theme = useSyncExternalStore<Theme | null>(subscribe, readTheme, () => null);
+  useEffect(restoreTheme, []);
 
   const select = (next: Theme) => applyTheme(next);
 

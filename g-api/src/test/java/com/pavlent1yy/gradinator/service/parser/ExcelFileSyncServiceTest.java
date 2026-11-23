@@ -3,6 +3,7 @@ package com.pavlent1yy.gradinator.service.parser;
 import com.pavlent1yy.gradinator.config.StorageContext;
 import com.pavlent1yy.gradinator.entity.ScheduleFile;
 import com.pavlent1yy.gradinator.repository.ScheduleFileRepository;
+import com.pavlent1yy.gradinator.support.SheetBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,7 +45,7 @@ class ExcelFileSyncServiceTest {
         ReflectionTestUtils.setField(storage, "storageDirPath", storageDir.toString());
         storage.init();
 
-        service = new ExcelFileSyncService(storage, fileRepository);
+        service = new ExcelFileSyncService(storage, fileRepository, new ExcelLayoutScanner());
         ReflectionTestUtils.setField(service, "sourceUrl", "https://college.test/rasp/");
         ReflectionTestUtils.setField(service, "client", client);
         ReflectionTestUtils.invokeMethod(service, "fileUpload");
@@ -53,20 +54,17 @@ class ExcelFileSyncServiceTest {
     }
 
     @SuppressWarnings("unchecked")
-    private void head(String etag, long size) throws Exception {
-        HttpResponse<Void> response = mock(HttpResponse.class);
-        when(response.headers()).thenReturn(HttpHeaders.of(
-                Map.of("ETag", List.of(etag), "Content-Length", List.of(String.valueOf(size))),
-                (a, b) -> true));
-        doReturn(response).when(client).send(argThat(r -> r != null && r.method().equals("HEAD")), any());
-    }
-
-    @SuppressWarnings("unchecked")
-    private void get(int status, String body) throws Exception {
+    private void get(int status, String etag, byte[] body) throws Exception {
         HttpResponse<byte[]> response = mock(HttpResponse.class);
         when(response.statusCode()).thenReturn(status);
-        when(response.body()).thenReturn(body.getBytes(StandardCharsets.UTF_8));
+        when(response.headers()).thenReturn(HttpHeaders.of(Map.of("ETag", List.of(etag)), (a, b) -> true));
+        when(response.body()).thenReturn(body);
         doReturn(response).when(client).send(argThat(r -> r != null && r.method().equals("GET")), any());
+    }
+
+    private byte[] workbook() throws Exception {
+        return Files.readAllBytes(new SheetBuilder().fullWeek("ИС1-12", "История")
+                .writeTo(storageDir.resolve("candidate")));
     }
 
     private ScheduleFile lastSaved() {
@@ -75,63 +73,83 @@ class ExcelFileSyncServiceTest {
         return captor.getValue();
     }
 
-    private static String sha256(String s) throws Exception {
-        byte[] hash = java.security.MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8));
+    private static String sha256(byte[] content) throws Exception {
+        byte[] hash = java.security.MessageDigest.getInstance("SHA-256").digest(content);
         return java.util.HexFormat.of().formatHex(hash);
     }
 
     @Test
-    void downloadsNewFileAndStoresMetadata() throws Exception {
-        head("\"e1\"", 3);
-        get(200, "new");
+    void downloadsChangedWorkbookAndStoresMetadata() throws Exception {
+        byte[] content = workbook();
+        get(200, "\"e1\"", content);
 
         assertThat(service.syncAll()).isTrue();
 
-        assertThat(Files.readString(storageDir.resolve("oit.xlsx"))).isEqualTo("new");
+        assertThat(Files.readAllBytes(storageDir.resolve("oit.xlsx"))).isEqualTo(content);
         ScheduleFile saved = lastSaved();
         assertThat(saved.getFilename()).isEqualTo("oit.xlsx");
         assertThat(saved.getEtag()).isEqualTo("\"e1\"");
-        assertThat(saved.getSize()).isEqualTo(3L);
-        assertThat(saved.getHash()).isEqualTo(sha256("new"));
+        assertThat(saved.getSize()).isEqualTo((long) content.length);
+        assertThat(saved.getHash()).isEqualTo(sha256(content));
         assertThat(saved.getUpdatedAt()).isNotNull();
 
         ArgumentCaptor<HttpRequest> requests = ArgumentCaptor.forClass(HttpRequest.class);
-        verify(client, times(2)).send(requests.capture(), any());
-        assertThat(requests.getAllValues()).allSatisfy(r ->
-                assertThat(r.uri().toString()).isEqualTo("https://college.test/rasp/oit.xlsx"));
+        verify(client).send(requests.capture(), any());
+        assertThat(requests.getValue().uri().toString()).isEqualTo("https://college.test/rasp/oit.xlsx");
     }
 
     @Test
-    void skipsDownloadWhenEtagAndSizeUnchanged() throws Exception {
-        ScheduleFile known = ScheduleFile.builder().id(1L).filename("oit.xlsx").etag("\"e1\"").size(3L).build();
+    void usesEtagOnlyWhenLocalFileMatchesStoredHash() throws Exception {
+        byte[] local = Files.readAllBytes(storageDir.resolve("oit.xlsx"));
+        ScheduleFile known = ScheduleFile.builder().id(1L).filename("oit.xlsx")
+                .etag("\"e1\"").hash(sha256(local)).build();
         when(fileRepository.findByFilename("oit.xlsx")).thenReturn(Optional.of(known));
-        head("\"e1\"", 3);
+        get(304, "\"e1\"", new byte[0]);
 
         assertThat(service.syncAll()).isFalse();
 
-        verify(client, times(1)).send(any(), any());
+        verify(client).send(argThat(r -> r.headers().firstValue("If-None-Match").orElse("").equals("\"e1\"")), any());
         verify(fileRepository, never()).save(any());
-        assertThat(Files.readString(storageDir.resolve("oit.xlsx"))).isEqualTo("old");
+    }
+
+    @Test
+    void repairsLocalFileEvenIfDownloadedHashMatchesStoredHash() throws Exception {
+        byte[] content = workbook();
+        ScheduleFile known = ScheduleFile.builder().id(1L).filename("oit.xlsx")
+                .etag("\"e1\"").hash(sha256(content)).build();
+        when(fileRepository.findByFilename("oit.xlsx")).thenReturn(Optional.of(known));
+        get(200, "\"e1\"", content);
+
+        assertThat(service.syncAll()).isTrue();
+
+        verify(client).send(argThat(r -> r.headers().firstValue("If-None-Match").isEmpty()), any());
+        assertThat(Files.readAllBytes(storageDir.resolve("oit.xlsx"))).isEqualTo(content);
     }
 
     @Test
     void sameContentUnderNewEtagOnlyUpdatesMetadata() throws Exception {
-        ScheduleFile known = ScheduleFile.builder().id(1L).filename("oit.xlsx")
-                .etag("\"e1\"").size(3L).hash(sha256("new")).build();
-        when(fileRepository.findByFilename("oit.xlsx")).thenReturn(Optional.of(known));
-        head("\"e2\"", 3);
-        get(200, "new");
+        byte[] content = workbook();
+        Files.write(storageDir.resolve("oit.xlsx"), content);
+        get(200, "\"e2\"", content);
+
+        assertThat(service.syncAll()).isFalse();
+        assertThat(lastSaved().getEtag()).isEqualTo("\"e2\"");
+        assertThat(lastSaved().getUpdatedAt()).isNull();
+    }
+
+    @Test
+    void keepsLocalWorkbookWhenServerReturnsHtmlAsSuccess() throws Exception {
+        get(200, "\"e1\"", "<html>Maintenance</html>".getBytes(StandardCharsets.UTF_8));
 
         assertThat(service.syncAll()).isFalse();
 
-        assertThat(lastSaved().getEtag()).isEqualTo("\"e2\"");
+        verify(fileRepository, never()).save(any());
         assertThat(Files.readString(storageDir.resolve("oit.xlsx"))).isEqualTo("old");
     }
 
     @Test
     void httpErrorIsSwallowedPerFile() throws Exception {
-        head("\"e1\"", 3);
-        get(500, "");
+        get(500, "\"e1\"", new byte[0]);
 
         assertThat(service.syncAll()).isFalse();
 
@@ -140,21 +158,23 @@ class ExcelFileSyncServiceTest {
     }
 
     @Test
-    void onlyRegularFilesAreSynced() throws Exception {
-        head("\"e1\"", 3);
-        get(200, "new");
+    void onlyXlsxFilesAreSynced() throws Exception {
+        Files.writeString(storageDir.resolve("ignore.txt"), "ignore");
+        ReflectionTestUtils.invokeMethod(service, "fileUpload");
+        get(500, "\"e1\"", new byte[0]);
 
         service.syncAll();
 
         verify(fileRepository).findByFilename("oit.xlsx");
         verify(fileRepository, never()).findByFilename("subdir");
+        verify(fileRepository, never()).findByFilename("ignore.txt");
     }
 
     @Test
     void failsOnMissingStorageDir() {
         StorageContext storage = mock(StorageContext.class);
         when(storage.getStorageDir()).thenReturn(storageDir.resolve("missing"));
-        ExcelFileSyncService broken = new ExcelFileSyncService(storage, fileRepository);
+        ExcelFileSyncService broken = new ExcelFileSyncService(storage, fileRepository, new ExcelLayoutScanner());
 
         assertThatThrownBy(() -> ReflectionTestUtils.invokeMethod(broken, "fileUpload"))
                 .hasMessageContaining("Не удалось загрузить список файлов");

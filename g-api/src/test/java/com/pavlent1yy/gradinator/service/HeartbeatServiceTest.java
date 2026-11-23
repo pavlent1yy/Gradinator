@@ -94,6 +94,21 @@ class HeartbeatServiceTest {
     }
 
     @Test
+    void retriesRebuildFromUpdatedBooksWithoutFreshChanges() {
+        changesFor(today.minusDays(1));
+        when(excelFileSyncService.syncAll()).thenReturn(true, false);
+        when(snapshotBuildService.existsForDate(today)).thenReturn(true);
+        when(snapshotBuildService.buildAndSave(today, groups, Map.of(), Set.copyOf(groups)))
+                .thenThrow(new IllegalStateException("не удалось записать снапшот"))
+                .thenReturn(SnapshotBuiltStatus.UPDATED);
+
+        service.run();
+        service.run();
+
+        verify(snapshotBuildService, times(2)).buildAndSave(today, groups, Map.of(), Set.copyOf(groups));
+    }
+
+    @Test
     void skipsRebuildWhenChangesAreOldAndSnapshotExists() {
         changesFor(today.minusDays(1));
         when(snapshotBuildService.existsForDate(today)).thenReturn(true);

@@ -34,23 +34,25 @@ public class HeartbeatService {
 
     @Value("${api.start-with-heartbeat}")
     private boolean startWithHeartbeat;
+    private boolean refreshTodayFromExcel;
 
     @EventListener(ApplicationReadyEvent.class)
-    public void startup() {
+    public synchronized void startup() {
         if (startWithHeartbeat) {
             log.info("🔵Первый heartbeat после запуска приложения api.start-with-heartbeat={}", startWithHeartbeat);
+            refreshTodayFromExcel = true;
             run();
         }
     }
 
     @Scheduled(initialDelay = 15 * 60 * 1000, fixedDelay = 15 * 60 * 1000)
-    public void run() {
+    public synchronized void run() {
         Instant start = Instant.now();
         log.info("🔵Heartbeat стартовал: {}", start);
         StringBuilder message = new StringBuilder();
 
         try {
-//            excelFileSyncService.syncAll();
+            refreshTodayFromExcel |= excelFileSyncService.syncAll();
 
             var allChanges = parserService.getAllChanges();
             LocalDate today = LocalDate.now();
@@ -66,7 +68,8 @@ public class HeartbeatService {
                 }
             }
 
-            SnapshotBuiltStatus todayStatus = buildSnapshot(today, groups, changesByDate.remove(today));
+            SnapshotBuiltStatus todayStatus = buildSnapshot(today, groups, changesByDate.remove(today), refreshTodayFromExcel);
+            refreshTodayFromExcel = false;
             message.append("""
                 Status: %s
                 Groups: %d
@@ -76,7 +79,7 @@ public class HeartbeatService {
             for (var entry : changesByDate.entrySet()) {
                 LocalDate date = entry.getKey();
                 if (weekService.isDayOff(date)) continue;
-                var aheadStatus = buildSnapshot(date, groups, entry.getValue());
+                var aheadStatus = buildSnapshot(date, groups, entry.getValue(), false);
                 message.append("\nAhead: ").append(date).append(" ").append(aheadStatus);
             }
 
@@ -90,8 +93,10 @@ public class HeartbeatService {
         }
     }
 
-    private SnapshotBuiltStatus buildSnapshot(LocalDate date, List<String> groups, List<ShiftChanges> published) {
-        if (weekService.isDayOff(date) || (published.isEmpty() && snapshotBuildService.existsForDate(date))) {
+    private SnapshotBuiltStatus buildSnapshot(LocalDate date, List<String> groups, List<ShiftChanges> published,
+                                               boolean refreshFromExcel) {
+        if (weekService.isDayOff(date) ||
+                (!refreshFromExcel && published.isEmpty() && snapshotBuildService.existsForDate(date))) {
             return SnapshotBuiltStatus.NO_CHANGES;
         }
 

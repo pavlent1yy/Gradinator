@@ -16,6 +16,16 @@ export function readTheme(): Theme {
   return THEMES.some((t) => t.id === attr) ? (attr as Theme) : DEFAULT_THEME;
 }
 
+export function restoreTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    const stored = THEMES.find(({ id }) => id === saved);
+    if (stored && readTheme() !== stored.id) {
+      document.documentElement.setAttribute('data-theme', stored.id);
+    }
+  } catch {}
+}
+
 export function applyTheme(theme: Theme) {
   document.documentElement.setAttribute('data-theme', theme);
   try {

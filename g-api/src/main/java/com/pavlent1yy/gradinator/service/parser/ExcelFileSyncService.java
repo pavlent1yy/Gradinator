@@ -6,9 +6,11 @@ import com.pavlent1yy.gradinator.repository.ScheduleFileRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -16,11 +18,13 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -35,8 +39,12 @@ public class ExcelFileSyncService {
 
     private final StorageContext storageContext;
     private final ScheduleFileRepository fileRepository;
+    private final ExcelLayoutScanner scanner;
 
-    private final HttpClient client = HttpClient.newHttpClient();
+    private final HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
 
     @PostConstruct
     private void fileUpload() {
@@ -49,6 +57,7 @@ public class ExcelFileSyncService {
                 stream.filter(Files::isRegularFile)
                         .map(Path::getFileName)
                         .map(Path::toString)
+                        .filter(name -> name.toLowerCase(Locale.ROOT).endsWith(".xlsx"))
                         .forEach(files::add);
             }
 
@@ -68,6 +77,9 @@ public class ExcelFileSyncService {
         for (String filename : files) {
             try {
                 anyChanged |= syncOne(filename);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             } catch (Exception e) {
                 log.error("⭕ Не удалось синхронизировать {}", filename, e);
             }
@@ -81,57 +93,60 @@ public class ExcelFileSyncService {
         log.debug("🐜 Синхронизация файла {}", filename);
         ScheduleFile record = fileRepository
                 .findByFilename(filename).orElseGet(() -> ScheduleFile.builder().filename(filename).build());
-        String url = sourceUrl + filename;
-        HttpRequest head = HttpRequest.newBuilder(
-                        URI.create(url)).method("HEAD", HttpRequest.BodyPublishers.noBody()).build();
-        HttpResponse<Void> headResponse = client.send(head, HttpResponse.BodyHandlers.discarding());
-        String remoteEtag = headResponse.headers().firstValue("ETag").orElse(null);
-        long remoteSize = headResponse.headers().firstValueAsLong("Content-Length").orElse(-1);
-        boolean etagChanged = remoteEtag != null && !remoteEtag.equals(record.getEtag());
-        boolean sizeChanged = remoteSize >= 0 && !Long.valueOf(remoteSize).equals(record.getSize());
-
-        if (!etagChanged && !sizeChanged && record.getId() != null) {
-            return false;
+        Path target = storageContext.resolve(filename);
+        String localHash = Files.exists(target) ? sha256(Files.readAllBytes(target)) : null;
+        HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(sourceUrl + filename))
+                .timeout(Duration.ofSeconds(10));
+        boolean conditional = localHash != null && localHash.equals(record.getHash()) && record.getEtag() != null;
+        if (conditional) {
+            request.header("If-None-Match", record.getEtag());
         }
 
-        HttpRequest get = HttpRequest.newBuilder(URI.create(url)).GET().build();
-
-        HttpResponse<byte[]> response = client.send(get, HttpResponse.BodyHandlers.ofByteArray());
-
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+        HttpResponse<byte[]> response = client.send(request.GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+        if (conditional && response.statusCode() == 304) return false;
+        if (response.statusCode() != 200) {
             throw new IOException("HTTP " + response.statusCode() + " при загрузке " + filename);
         }
         byte[] content = response.body();
 
         String newHash = sha256(content);
-        if (newHash.equals(record.getHash())) {
-
-            record.setEtag(remoteEtag);
-            record.setSize((long) content.length);
-
-            fileRepository.save(record);
-
-            return false;
+        boolean changed = !newHash.equals(localHash);
+        if (changed) {
+            validateWorkbook(content);
+            Path temporary = Files.createTempFile(target.getParent(), ".schedule-", ".tmp");
+            try {
+                Files.write(temporary, content);
+                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                Files.deleteIfExists(temporary);
+            }
+            record.setUpdatedAt(LocalDateTime.now());
+            log.info("🔵 Файл {} обновлён, новый hash {}", filename, newHash);
         }
 
-        Path target = storageContext.resolve(filename);
-
-        Files.write(
-                target,
-                content,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING
-        );
-
-        record.setEtag(remoteEtag);
+        record.setEtag(response.headers().firstValue("ETag").orElse(null));
         record.setSize((long) content.length);
         record.setHash(newHash);
-        record.setUpdatedAt(LocalDateTime.now());
+        try {
+            fileRepository.save(record);
+        } catch (RuntimeException e) {
+            log.error("⭕ Не удалось сохранить метаданные {}", filename, e);
+        }
+        return changed;
+    }
 
-        fileRepository.save(record);
-
-        log.info("🔵 Файл {} обновлён, новый hash {}", filename, newHash);
-        return true;
+    private void validateWorkbook(byte[] content) throws IOException {
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(content))) {
+            boolean hasGroups = false;
+            for (var sheet : workbook) {
+                var groups = scanner.scan(sheet);
+                if (groups.stream().anyMatch(group -> group.getDays().size() != 6)) {
+                    throw new IOException("В книге есть группы с неполным расписанием");
+                }
+                hasGroups |= !groups.isEmpty();
+            }
+            if (!hasGroups) throw new IOException("В книге нет расписания групп");
+        }
     }
 
     private String sha256(byte[] content) throws Exception {
