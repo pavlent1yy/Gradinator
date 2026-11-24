@@ -44,7 +44,11 @@ jobs:
           trap 'rm -f "$ssh_dir/key" "$ssh_dir/scanned" "$ssh_dir/known_hosts"; rmdir "$ssh_dir"' EXIT
           printf '%s\n' "$DEPLOY_SSH_KEY" > "$ssh_dir/key"
           ssh-keyscan -T 15 -p "$DEPLOY_PORT" "$DEPLOY_HOST" > "$ssh_dir/scanned"
-          while IFS= read -r host_key; do
+          while read -r host_key; do
+            # OpenSSH can include server banner comments on stdout.
+            case "$host_key" in
+              ''|\#*) continue ;;
+            esac
             fingerprint=$(printf '%s\n' "$host_key" | ssh-keygen -lf - | awk '{print $2}')
             if [ "$fingerprint" = "$DEPLOY_HOST_FINGERPRINT" ]; then
               printf '%s\n' "$host_key" >> "$ssh_dir/known_hosts"
