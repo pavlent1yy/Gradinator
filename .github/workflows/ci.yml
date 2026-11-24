@@ -66,6 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sh deploy/test-deploy.sh
+      - run: python3 -m unittest discover -s deploy -p 'test_ssh_host_keys.py' -v
 
   backend:
     name: Тесты ${{ matrix.module }}
